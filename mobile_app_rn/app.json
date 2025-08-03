@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "YYS-SQR Scanner",
+    "slug": "yys-sqr-scanner",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2196F3"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to scan watermarked images and detect hidden messages.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select images for watermark embedding and to save watermarked images."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2196F3"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id-here"
+      }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow YYS-SQR to access your camera to scan watermarked images."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow YYS-SQR to access your photos to save watermarked images.",
+          "savePhotosPermission": "Allow YYS-SQR to save watermarked images to your photo library.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ]
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: yys-sqr-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python render_server.py
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PORT
+        value: 10000
+    healthCheckPath: /api/health

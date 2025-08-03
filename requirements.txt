@@ -1,0 +1,13 @@
+flask>=2.3.0
+flask-cors>=4.0.0
+pillow>=10.0.0
+numpy>=1.20.0,<2.0.0
+opencv-python-headless>=4.8.0
+requests>=2.31.0
+torch>=2.1.2
+torchvision>=0.16.2
+lightning>=2.0
+omegaconf>=2.1
+six>=1.9
+einops>=0.4.0
+pathlib>=1.0.1
