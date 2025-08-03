@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // Configure your backend URL here
-const API_BASE_URL = 'http://localhost:5000/api'; // Change to your server IP for device testing
+const API_BASE_URL = 'https://yys-sqr-render.onrender.com/api'; // Live Render deployment
 
 class YYSApiService {
   constructor() {
