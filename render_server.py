@@ -101,6 +101,107 @@ def health():
         'ready': detector is not None and tm is not None
     }), 200 if status == 'healthy' else 503
 
+@app.route('/api/scan/manual', methods=['POST'])
+def scan_manual():
+    """Scan watermark with manual corner selection (like desktop app)"""
+    if not tm:
+        return jsonify({
+            'error': 'Watermarking service not available',
+            'details': 'TrustMark failed to initialize'
+        }), 503
+    
+    try:
+        data = request.get_json()
+        if not data or 'image' not in data or 'corners' not in data:
+            return jsonify({'error': 'Missing image or corners data'}), 400
+        
+        corners = data['corners']
+        if len(corners) != 4:
+            return jsonify({'error': 'Exactly 4 corners required'}), 400
+        
+        logger.info(f"🔍 Manual scan with corners: {corners}")
+        
+        # Decode base64 image
+        try:
+            image_data = base64.b64decode(data['image'])
+            logger.info(f"📊 Image size: {len(image_data)} bytes")
+        except Exception as e:
+            return jsonify({'error': f'Invalid base64 image: {str(e)}'}), 400
+        
+        # Save to temporary file
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as f:
+            f.write(image_data)
+            temp_path = f.name
+        
+        try:
+            # Load image with OpenCV
+            import cv2
+            import numpy as np
+            from PIL import Image as PILImage
+            
+            image = cv2.imread(temp_path)
+            if image is None:
+                return jsonify({'error': 'Could not load image'}), 400
+            
+            # Convert corners to numpy array
+            coordinates = np.float32(corners)
+            
+            # Define output size (same as desktop app)
+            output_width, output_height = 1024, 1024
+            destination_points = np.float32([
+                [0, 0], 
+                [output_width, 0], 
+                [output_width, output_height], 
+                [0, output_height]
+            ])
+            
+            # Apply perspective transformation
+            matrix = cv2.getPerspectiveTransform(coordinates, destination_points)
+            corrected_image_cv = cv2.warpPerspective(image, matrix, (output_width, output_height))
+            
+            # Convert to RGB for TrustMark
+            corrected_image_rgb = cv2.cvtColor(corrected_image_cv, cv2.COLOR_BGR2RGB)
+            image_to_decode = PILImage.fromarray(corrected_image_rgb)
+            
+            # Decode watermark
+            secret_id, present, _ = tm.decode(image_to_decode)
+            
+            if present:
+                logger.info(f"✅ Manual scan successful: {secret_id}")
+                return jsonify({
+                    'success': True,
+                    'watermark_id': secret_id,
+                    'method': 'manual_corner_selection',
+                    'corners': corners,
+                    'timestamp': datetime.now().isoformat(),
+                    'server': 'render'
+                })
+            else:
+                logger.info("❌ No watermark found with manual corners")
+                return jsonify({
+                    'success': False,
+                    'error': 'No watermark detected',
+                    'details': 'Check corner selection - ensure corners are on the watermarked area',
+                    'method': 'manual_corner_selection',
+                    'corners': corners,
+                    'timestamp': datetime.now().isoformat()
+                })
+            
+        finally:
+            try:
+                os.unlink(temp_path)
+            except:
+                pass
+                
+    except Exception as e:
+        logger.error(f"💥 Manual scan error: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Internal scan error',
+            'details': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
 @app.route('/api/scan', methods=['POST'])
 def scan():
     """Scan watermark with full auto corner detection"""

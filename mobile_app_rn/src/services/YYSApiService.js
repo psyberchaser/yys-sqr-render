@@ -8,7 +8,7 @@ class YYSApiService {
   constructor() {
     this.client = axios.create({
       baseURL: API_BASE_URL,
-      timeout: 30000, // 30 second timeout
+      timeout: 120000, // 2 minute timeout for scanning
       headers: {
         'Content-Type': 'application/json',
       },
@@ -102,6 +102,23 @@ class YYSApiService {
       return response.data;
     } catch (error) {
       console.error('API Error - visualizeDetection:', error);
+      throw new Error(error.response?.data?.error || 'Network error');
+    }
+  }
+
+  /**
+   * Scan watermark with manual corner selection
+   */
+  async scanWatermarkManual(base64Image, corners) {
+    try {
+      const response = await this.client.post('/scan/manual', {
+        image: base64Image,
+        corners: corners,
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('API Error - scanWatermarkManual:', error);
       throw new Error(error.response?.data?.error || 'Network error');
     }
   }

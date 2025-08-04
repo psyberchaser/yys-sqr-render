@@ -118,9 +118,21 @@ export default function HomeScreen({ navigation }) {
           disabled={serverStatus !== 'online'}
         >
           <Text style={styles.buttonIcon}>📷</Text>
-          <Text style={styles.buttonText}>Scan Watermark</Text>
+          <Text style={styles.buttonText}>Auto Scan</Text>
           <Text style={styles.buttonSubtext}>
             Automatically detect and decode hidden messages
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.manualButton]}
+          onPress={() => navigation.navigate('ManualScan')}
+          disabled={serverStatus !== 'online'}
+        >
+          <Text style={styles.buttonIcon}>👆</Text>
+          <Text style={styles.buttonText}>Manual Scan</Text>
+          <Text style={styles.buttonSubtext}>
+            Select 4 corners manually (more reliable)
           </Text>
         </TouchableOpacity>
 
@@ -217,6 +229,10 @@ const styles = StyleSheet.create({
   scanButton: {
     borderLeftWidth: 5,
     borderLeftColor: '#4CAF50',
+  },
+  manualButton: {
+    borderLeftWidth: 5,
+    borderLeftColor: '#FF9800',
   },
   embedButton: {
     borderLeftWidth: 5,

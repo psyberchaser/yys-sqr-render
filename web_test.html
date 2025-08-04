@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YYS-SQR Web Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { background: #f5f5f5; padding: 20px; border-radius: 10px; margin: 20px 0; }
+        button { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 10px; }
+        button:hover { background: #1976D2; }
+        input[type="file"] { margin: 10px 0; }
+        input[type="text"] { padding: 8px; margin: 10px 0; width: 200px; }
+        .result { background: #e8f5e8; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .error { background: #ffe8e8; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        img { max-width: 400px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🎯 YYS-SQR Watermarking Test</h1>
+    <p><strong>API:</strong> https://yys-sqr-render.onrender.com/api</p>
+    
+    <div class="container">
+        <h2>📊 API Status</h2>
+        <button onclick="checkHealth()">Check API Health</button>
+        <div id="healthResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>🔒 Embed Watermark</h2>
+        <input type="file" id="embedImage" accept="image/*">
+        <input type="text" id="message" placeholder="Message (max 5 chars)" maxlength="5">
+        <button onclick="embedWatermark()">Embed Watermark</button>
+        <div id="embedResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>🔍 Scan Watermark</h2>
+        <input type="file" id="scanImage" accept="image/*">
+        <button onclick="scanWatermark()">Scan Watermark</button>
+        <div id="scanResult"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://yys-sqr-render.onrender.com/api';
+
+        async function checkHealth() {
+            const result = document.getElementById('healthResult');
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                result.innerHTML = `<div class="result">
+                    <strong>Status:</strong> ${data.status}<br>
+                    <strong>Components:</strong> ${JSON.stringify(data.components, null, 2)}<br>
+                    <strong>Ready:</strong> ${data.ready}
+                </div>`;
+            } catch (error) {
+                result.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function embedWatermark() {
+            const fileInput = document.getElementById('embedImage');
+            const messageInput = document.getElementById('message');
+            const result = document.getElementById('embedResult');
+            
+            if (!fileInput.files[0] || !messageInput.value) {
+                result.innerHTML = '<div class="error">Please select an image and enter a message</div>';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const message = messageInput.value;
+            
+            // Convert to base64
+            const base64 = await fileToBase64(file);
+            
+            try {
+                result.innerHTML = '<div>Processing...</div>';
+                const response = await fetch(`${API_BASE}/embed`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: base64, message: message })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.innerHTML = `<div class="result">
+                        <strong>✅ Watermark Embedded!</strong><br>
+                        <strong>Message:</strong> ${data.message}<br>
+                        <strong>Encoding:</strong> ${data.encoding}<br>
+                        <img src="data:image/png;base64,${data.watermarked_image}" alt="Watermarked Image">
+                        <br><a href="data:image/png;base64,${data.watermarked_image}" download="watermarked.png">Download</a>
+                    </div>`;
+                } else {
+                    result.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function scanWatermark() {
+            const fileInput = document.getElementById('scanImage');
+            const result = document.getElementById('scanResult');
+            
+            if (!fileInput.files[0]) {
+                result.innerHTML = '<div class="error">Please select an image</div>';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const base64 = await fileToBase64(file);
+            
+            try {
+                result.innerHTML = '<div>Scanning... (this may take a moment)</div>';
+                const response = await fetch(`${API_BASE}/scan`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: base64 })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.innerHTML = `<div class="result">
+                        <strong>✅ Watermark Found!</strong><br>
+                        <strong>Message:</strong> ${data.watermark_id}<br>
+                        <strong>Method:</strong> ${data.detection_method}<br>
+                        <strong>Confidence:</strong> ${data.confidence || 'High'}<br>
+                        <strong>Processing Time:</strong> ${data.processing_time || 'N/A'}
+                    </div>`;
+                } else {
+                    result.innerHTML = `<div class="error">
+                        <strong>❌ No Watermark Found</strong><br>
+                        <strong>Error:</strong> ${data.error}<br>
+                        <strong>Details:</strong> ${data.details || 'Try a different image or better lighting'}
+                    </div>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // Check health on load
+        window.onload = checkHealth;
+    </script>
+</body>
+</html>

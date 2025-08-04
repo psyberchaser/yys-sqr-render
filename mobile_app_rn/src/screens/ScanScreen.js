@@ -9,15 +9,16 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import { Camera } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system';
-import { YYSApiService } from '../services/YYSApiService';
+import * as ImageManipulator from 'expo-image-manipulator';
+import YYSApiService from '../services/YYSApiService';
 
 const { width, height } = Dimensions.get('window');
 
 export default function ScanScreen({ navigation }) {
-  const [hasPermission, setHasPermission] = useState(null);
+  const [permission, requestPermission] = useCameraPermissions();
   const [isScanning, setIsScanning] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [autoScanEnabled, setAutoScanEnabled] = useState(true);
@@ -25,19 +26,21 @@ export default function ScanScreen({ navigation }) {
   const scanTimeoutRef = useRef(null);
 
   useEffect(() => {
-    (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
-    })();
-  }, []);
+    if (!permission) {
+      requestPermission();
+    }
+  }, [permission]);
 
   const takePicture = async () => {
     if (cameraRef.current && !isProcessing) {
       setIsProcessing(true);
       try {
         const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.8,
+          quality: 0.1, // Very low quality for testing
           base64: true,
+          skipProcessing: true,
+          // Try to reduce resolution
+          exif: false,
         });
         
         await processImage(photo);
@@ -51,11 +54,28 @@ export default function ScanScreen({ navigation }) {
 
   const processImage = async (photo) => {
     try {
-      // Convert to base64 if needed
-      const base64Image = photo.base64;
+      // Debug: Log original image size
+      console.log(`Original image size: ${(photo.base64.length * 0.75 / 1024 / 1024).toFixed(2)} MB`);
+      console.log(`Original dimensions: ${photo.width}x${photo.height}`);
+      
+      // Resize image to reduce processing time - make it even smaller for server processing
+      const resizedImage = await ImageManipulator.manipulateAsync(
+        photo.uri,
+        [{ resize: { width: 400 } }], // Much smaller - 400px max width
+        { 
+          compress: 0.2, 
+          format: ImageManipulator.SaveFormat.JPEG,
+          base64: true 
+        }
+      );
+      
+      console.log(`Resized image size: ${(resizedImage.base64.length * 0.75 / 1024 / 1024).toFixed(2)} MB`);
+      console.log(`Resized dimensions: ${resizedImage.width}x${resizedImage.height}`);
       
       // Call our Python backend API for automatic corner detection and decoding
-      const result = await YYSApiService.scanWatermark(base64Image);
+      console.log('Sending resized image to API for scanning...');
+      const result = await YYSApiService.scanWatermark(resizedImage.base64);
+      console.log('Full API response:', JSON.stringify(result, null, 2));
       
       if (result.success) {
         // Navigate to result screen with the decoded data
@@ -104,7 +124,7 @@ export default function ScanScreen({ navigation }) {
     setAutoScanEnabled(!autoScanEnabled);
   };
 
-  if (hasPermission === null) {
+  if (!permission) {
     return (
       <View style={styles.container}>
         <Text>Requesting camera permission...</Text>
@@ -112,21 +132,23 @@ export default function ScanScreen({ navigation }) {
     );
   }
 
-  if (hasPermission === false) {
+  if (!permission.granted) {
     return (
       <View style={styles.container}>
         <Text style={styles.text}>No access to camera</Text>
+        <TouchableOpacity style={styles.button} onPress={requestPermission}>
+          <Text style={styles.buttonText}>Grant Permission</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <Camera 
+      <CameraView 
         style={styles.camera} 
-        type={Camera.Constants.Type.back}
+        facing="back"
         ref={cameraRef}
-        autoFocus={Camera.Constants.AutoFocus.on}
       >
         <View style={styles.overlay}>
           {/* Scanning frame overlay */}
@@ -174,7 +196,7 @@ export default function ScanScreen({ navigation }) {
             </TouchableOpacity>
           </View>
         </View>
-      </Camera>
+      </CameraView>
     </View>
   );
 }

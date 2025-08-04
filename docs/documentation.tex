@@ -1,0 +1,1081 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage{tocloft}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{float}
+
+% Page setup
+\geometry{margin=1in}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{YYS-SQR Watermarking System}
+\fancyhead[R]{\thepage}
+\fancyfoot[C]{Documentation v1.0}
+
+% Code listing setup
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{pythonstyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    language=Python
+}
+
+\lstset{style=pythonstyle}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={YYS-SQR Watermarking System Documentation},
+    pdfauthor={Documentation Team},
+    pdfsubject={Digital Watermarking and Blockchain Integration},
+    pdfkeywords={watermarking, blockchain, IPFS, PyQt6, computer vision}
+}
+
+\title{\textbf{YYS-SQR Watermarking System}\\
+\large{Comprehensive Technical Documentation}}
+\author{Documentation Team}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document provides comprehensive technical documentation for the YYS-SQR (Yet Another System - Secure QR) watermarking application. The system combines advanced digital watermarking techniques with blockchain technology and IPFS storage to create a robust solution for image authentication and proof-of-scan verification. The application features a PyQt6-based graphical user interface that enables users to embed invisible watermarks in images and decode them from photographs, with optional blockchain integration for immutable proof-of-scan records.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+The YYS-SQR Watermarking System is a sophisticated digital watermarking application that addresses the growing need for image authentication and verification in the digital age. The system integrates multiple cutting-edge technologies to provide a comprehensive solution for:
+
+\begin{itemize}
+    \item \textbf{Digital Watermarking}: Invisible embedding of identification data in images
+    \item \textbf{Blockchain Integration}: Immutable proof-of-scan records on Ethereum Sepolia testnet
+    \item \textbf{IPFS Storage}: Decentralized storage of watermarked images
+    \item \textbf{Computer Vision}: Automatic perspective correction for mobile scanning
+    \item \textbf{Cryptographic Security}: Secure message encoding with error correction
+\end{itemize}
+
+\subsection{Key Features}
+
+\begin{enumerate}
+    \item \textbf{Advanced Computer Vision}: Automatic perspective correction using OpenCV for mobile scanning
+    \item \textbf{Invisible Watermarking}: Robust steganographic embedding with error correction
+    \item \textbf{Blockchain Verification}: Smart contract integration for proof-of-scan
+    \item \textbf{IPFS Integration}: Decentralized storage via Filebase S3-compatible API
+    \item \textbf{Single-Use SQRs}: Self-destructing watermarks for enhanced security
+    \item \textbf{Cross-Platform GUI}: PyQt6-based interface for desktop environments
+\end{enumerate}
+
+\section{System Architecture}
+
+\subsection{Overview}
+
+The YYS-SQR system follows a modular architecture with clear separation of concerns:
+
+\begin{figure}[H]
+\centering
+\begin{verbatim}
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   PyQt6 GUI     │    │  TrustMark      │    │  Computer       │
+│   Interface     │◄──►│  Watermarking   │◄──►│  Vision         │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Local JSON    │    │  IPFS/Filebase  │    │  Ethereum       │
+│   Database      │    │  Storage        │    │  Blockchain     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+\end{verbatim}
+\caption{System Architecture Overview}
+\end{figure}
+
+\subsection{Core Components}
+
+\subsubsection{Computer Vision Engine}
+The system leverages OpenCV for advanced image processing and perspective correction:
+\begin{itemize}
+    \item \textbf{Perspective Transformation}: Automatic correction of smartphone photos
+    \item \textbf{Corner Detection}: Interactive user-guided corner selection
+    \item \textbf{Image Processing}: Real-time scaling and format conversion
+    \item \textbf{Mobile Optimization}: Designed for handheld device photography
+\end{itemize}
+
+\subsubsection{Watermarking Engine}
+The system employs advanced steganographic techniques for robust watermarking:
+\begin{itemize}
+    \item \textbf{Error Correction}: BCH Super encoding for maximum robustness
+    \item \textbf{Quality Optimization}: Optimized for photographic image quality
+    \item \textbf{Capacity}: 5-character alphanumeric identifiers
+    \item \textbf{Robustness}: Resistant to compression, scaling, and perspective distortion
+\end{itemize}
+
+\subsubsection{Database Management}
+Local JSON-based storage system:
+\begin{itemize}
+    \item \textbf{Location}: Platform-specific application data directory
+    \item \textbf{Structure}: Key-value pairs with watermark ID as key
+    \item \textbf{Data}: Secret messages, IPFS CIDs, and configuration flags
+    \item \textbf{Security}: Local storage with optional self-destruction
+\end{itemize}
+
+\subsubsection{Blockchain Integration}
+Ethereum Sepolia testnet integration:
+\begin{itemize}
+    \item \textbf{Smart Contract}: ProofOfScanV2 contract for scan verification
+    \item \textbf{Network}: Sepolia testnet for development and testing
+    \item \textbf{Functionality}: Immutable proof-of-scan records
+    \item \textbf{Gas Optimization}: Fixed gas limits and pricing
+\end{itemize}
+
+\section{Installation and Setup}
+
+\subsection{System Requirements}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Component} & \textbf{Requirement} \\
+\midrule
+Operating System & macOS, Linux, Windows \\
+Python Version & 3.11+ (tested with 3.11.13, 3.12.2) \\
+Memory & 4GB RAM minimum, 8GB recommended \\
+Storage & 1GB free space \\
+Network & Internet connection for blockchain/IPFS \\
+\bottomrule
+\end{tabular}
+\caption{System Requirements}
+\end{table}
+
+\subsection{Dependencies}
+
+The application requires the following Python packages:
+
+\begin{lstlisting}[caption=Core Dependencies]
+# GUI Framework
+PyQt6==6.9.1
+PyQt6-Qt6==6.9.1
+PyQt6_sip==13.10.2
+
+# Computer Vision and Image Processing (Core Features)
+opencv-python==4.11.0.86
+pillow==11.2.1
+numpy==1.26.4
+
+# Steganographic Processing
+trustmark==0.8.0
+
+# Blockchain Integration
+web3==7.12.0
+eth-account==0.13.7
+eth-hash==0.7.1
+eth-keys==0.7.0
+
+# IPFS/Cloud Storage
+boto3==1.38.46
+botocore==1.38.46
+requests==2.32.4
+
+# Utilities
+pathlib==1.0.1
+\end{lstlisting}
+
+\subsection{Installation Steps}
+
+\begin{enumerate}
+    \item \textbf{Create Virtual Environment}:
+    \begin{lstlisting}[language=bash]
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+    \end{lstlisting}
+
+    \item \textbf{Install Dependencies}:
+    \begin{lstlisting}[language=bash]
+pip install PyQt6 opencv-python pillow numpy trustmark web3 boto3 requests
+    \end{lstlisting}
+
+    \item \textbf{Run Application}:
+    \begin{lstlisting}[language=bash]
+cd mac_app
+python main.py
+    \end{lstlisting}
+\end{enumerate}
+
+\section{User Interface Documentation}
+
+\subsection{Main Window Structure}
+
+The application features a tabbed interface with two primary modes:
+
+\begin{figure}[H]
+\centering
+\begin{verbatim}
+┌─────────────────────────────────────────────────────────────┐
+│ YYS - SQR                                            [_][□][×]│
+├─────────────────────────────────────────────────────────────┤
+│ [Embed SQR] [Decode SQR]                                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Tab Content Area                                           │
+│                                                             │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+\end{verbatim}
+\caption{Main Window Layout}
+\end{figure}
+
+\subsection{Embed SQR Tab}
+
+The embedding interface provides a three-step workflow:
+
+\subsubsection{Step 1: Image Selection}
+\begin{itemize}
+    \item \textbf{Button}: "Select Image"
+    \item \textbf{Supported Formats}: PNG, JPG, JPEG
+    \item \textbf{Functionality}: Opens file dialog for image selection
+    \item \textbf{Display}: Shows selected filename
+\end{itemize}
+
+\subsubsection{Step 2: Message Input}
+\begin{itemize}
+    \item \textbf{Component}: Multi-line text editor (QTextEdit)
+    \item \textbf{Purpose}: Enter secret message to embed
+    \item \textbf{Limitations}: Message length limited by watermarking capacity
+    \item \textbf{Content}: Any text content (URLs, authentication data, etc.)
+\end{itemize}
+
+\subsubsection{Step 3: Configuration Options}
+\begin{itemize}
+    \item \textbf{Single-Use SQR}: Checkbox for self-destructing watermarks
+    \item \textbf{Web3 Features}: Toggle for IPFS upload and blockchain integration
+    \item \textbf{Embed Button}: Initiates the watermarking process
+    \item \textbf{Status Display}: Shows progress and results
+\end{itemize}
+
+\subsection{Decode SQR Tab}
+
+The decoding interface provides a three-step scanning workflow:
+
+\subsubsection{Step 1: Photo Selection}
+\begin{itemize}
+    \item \textbf{Button}: "Select Photo"
+    \item \textbf{Purpose}: Load photograph of printed watermarked image
+    \item \textbf{Supported Formats}: PNG, JPG, JPEG
+    \item \textbf{Requirements}: Clear photo showing entire watermarked image
+\end{itemize}
+
+\subsubsection{Step 2: Advanced Corner Selection}
+\begin{itemize}
+    \item \textbf{Component}: Interactive image viewer with OpenCV integration (ClickableImageView)
+    \item \textbf{Functionality}: Precision corner selection for perspective correction
+    \item \textbf{Order}: Top-left, top-right, bottom-right, bottom-left
+    \item \textbf{Visual Feedback}: Real-time green dot markers with drag capability
+    \item \textbf{Computer Vision}: Automatic scaling and coordinate transformation
+\end{itemize}
+
+\subsubsection{Step 3: Computer Vision Processing and Verification}
+\begin{itemize}
+    \item \textbf{Perspective Correction}: Advanced OpenCV transformation algorithms
+    \item \textbf{Decode Button}: Performs geometric correction and data extraction
+    \item \textbf{Private Key Input}: Ethereum wallet private key for blockchain transactions
+    \item \textbf{Etherscan Link}: Opens transaction details in browser
+    \item \textbf{Results Display}: Shows decoded message and transaction status
+\end{itemize}
+
+\section{Technical Implementation}
+
+\subsection{Watermarking Process}
+
+\subsubsection{Embedding Algorithm}
+
+The embedding process follows these steps:
+
+\begin{lstlisting}[caption=Watermark Embedding Process]
+def embed_watermark(self):
+    # 1. Generate unique identifier
+    new_id = generate_unique_id(list(self.db.keys()))
+    
+    # 2. Load and prepare image
+    cover_image = Image.open(self.selected_embed_image_path).convert('RGB')
+    
+    # 3. Initialize TrustMark with strongest ECC
+    tm = trustmark.TrustMark(verbose=True, 
+                           encoding_type=trustmark.TrustMark.Encoding.BCH_SUPER)
+    
+    # 4. Embed watermark
+    watermarked_image = tm.encode(cover_image, new_id)
+    
+    # 5. Save watermarked image
+    watermarked_image.save(save_path)
+    
+    # 6. Optional IPFS upload
+    if self.web3_toggle_checkbox.isChecked():
+        ipfs_cid = upload_to_ipfs(save_path)
+    
+    # 7. Store metadata in database
+    self.db[new_id] = {
+        "secret_message": message,
+        "ipfs_cid": ipfs_cid,
+        "destroy_on_scan": destroy_on_scan
+    }
+\end{lstlisting}
+
+\subsubsection{Unique ID Generation}
+
+The system generates 5-character alphanumeric identifiers:
+
+\begin{lstlisting}[caption=Unique ID Generation]
+def generate_unique_id(existing_ids):
+    """Generates a unique 5-character alphanumeric ID."""
+    while True:
+        # Using uuid for better randomness
+        unique_id = str(uuid.uuid4())[:ID_LENGTH]
+        if unique_id not in existing_ids:
+            return unique_id
+\end{lstlisting}
+
+\subsection{Decoding Process}
+
+\subsubsection{Advanced Perspective Correction}
+
+The YYS-SQR system features sophisticated computer vision algorithms using OpenCV for automatic perspective correction:
+
+\begin{lstlisting}[caption=Advanced OpenCV Perspective Correction Algorithm]
+def decode_watermark(self):
+    # 1. Load smartphone photograph using OpenCV
+    image_cv = cv2.imread(self.selected_decode_image_path)
+    
+    # 2. Extract user-selected corner coordinates with scaling compensation
+    scaled_points = self.image_viewer.get_scaled_points()
+    coordinates = np.float32(scaled_points)
+    
+    # 3. Define normalized destination rectangle for perspective correction
+    output_width, output_height = 1024, 1024
+    destination_points = np.float32([
+        [0,0], [output_width,0], 
+        [output_width,output_height], [0,output_height]
+    ])
+    
+    # 4. Calculate OpenCV perspective transformation matrix
+    matrix = cv2.getPerspectiveTransform(coordinates, destination_points)
+    
+    # 5. Apply advanced perspective correction using OpenCV warpPerspective
+    corrected_image_cv = cv2.warpPerspective(
+        image_cv, matrix, (output_width, output_height)
+    )
+    
+    # 6. Convert color space for further processing
+    corrected_image_rgb = cv2.cvtColor(corrected_image_cv, cv2.COLOR_BGR2RGB)
+    image_to_decode = Image.fromarray(corrected_image_rgb)
+\end{lstlisting}
+
+\subsubsection{Watermark Extraction}
+
+\begin{lstlisting}[caption=Watermark Extraction]
+# Initialize TrustMark decoder
+tm = trustmark.TrustMark(verbose=True, 
+                       encoding_type=trustmark.TrustMark.Encoding.BCH_SUPER)
+
+# Decode watermark
+secret_id, present, confidence = tm.decode(image_to_decode)
+
+if present:
+    # Retrieve stored data
+    retrieved_data = self.db.get(secret_id)
+    if retrieved_data:
+        message = retrieved_data.get('secret_message', 'N/A')
+        ipfs_cid = retrieved_data.get('ipfs_cid', '')
+        
+        # Handle single-use SQRs
+        if retrieved_data.get('destroy_on_scan', False):
+            del self.db[secret_id]
+            self.save_database()
+\end{lstlisting}
+
+\subsection{IPFS Integration}
+
+\subsubsection{Filebase Configuration}
+
+The system uses Filebase as an S3-compatible IPFS gateway:
+
+\begin{lstlisting}[caption=IPFS Upload Configuration]
+# Filebase S3-Compatible Configuration
+FILEBASE_ACCESS_KEY = "F27503EAB0C920092137"
+FILEBASE_SECRET_KEY = "sZtWNzcoWWZkUhHDxM2WChGjt9OYrVDMsWZ0HYW3"
+FILEBASE_BUCKET_NAME = "yys-yys"
+FILEBASE_ENDPOINT = "https://s3.filebase.com"
+
+def upload_to_ipfs(file_path):
+    """Uploads a file to Filebase and returns the IPFS CID."""
+    s3_client = boto3.client(
+        's3',
+        endpoint_url=FILEBASE_ENDPOINT,
+        aws_access_key_id=FILEBASE_ACCESS_KEY,
+        aws_secret_access_key=FILEBASE_SECRET_KEY,
+        region_name='us-east-1',
+        config=Config(signature_version='s3v4')
+    )
+    
+    object_name = os.path.basename(file_path)
+    
+    with open(file_path, 'rb') as f:
+        s3_client.put_object(Body=f, Bucket=FILEBASE_BUCKET_NAME, Key=object_name)
+    
+    # Get IPFS CID from metadata
+    response = s3_client.head_object(
+        Bucket=FILEBASE_BUCKET_NAME,
+        Key=object_name
+    )
+    
+    ipfs_cid = response['Metadata'].get('cid')
+    return ipfs_cid
+\end{lstlisting}
+
+\subsection{Blockchain Integration}
+
+\subsubsection{Smart Contract Interface}
+
+The system interacts with the ProofOfScanV2 smart contract:
+
+\begin{lstlisting}[caption=Smart Contract Configuration]
+CONTRACT_ADDRESS = "0xd8b934580fcE35a11B58C6D73aDeE468a2833fa8"
+SEPOLIA_RPC_URL = "https://sepolia.infura.io/v3/7d8b2ce49fe24184b30beb42dc1fa791"
+
+# Contract ABI for ProofOfScanV2
+CONTRACT_ABI = [
+    {
+        "inputs": [
+            {"internalType": "string", "name": "_uniqueId", "type": "string"},
+            {"internalType": "string", "name": "_ipfsCid", "type": "string"}
+        ],
+        "name": "recordScan",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    # ... additional ABI entries
+]
+\end{lstlisting}
+
+\subsubsection{Transaction Processing}
+
+\begin{lstlisting}[caption=Blockchain Transaction Processing]
+def record_scan_on_blockchain(secret_id, ipfs_cid, private_key):
+    # Connect to Sepolia testnet
+    w3 = Web3(Web3.HTTPProvider(SEPOLIA_RPC_URL, 
+                               request_kwargs={'timeout': 120}))
+    
+    # Verify network
+    if w3.eth.chain_id != 11155111:  # Sepolia Chain ID
+        raise ConnectionError("Wrong network")
+    
+    # Create account from private key
+    account = w3.eth.account.from_key(private_key)
+    wallet_address = account.address
+    
+    # Initialize contract
+    contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
+    
+    # Build transaction
+    nonce = w3.eth.get_transaction_count(wallet_address)
+    tx = contract.functions.recordScan(secret_id, ipfs_cid).build_transaction({
+        'chainId': 11155111,
+        'from': wallet_address,
+        'nonce': nonce,
+        'gas': 200000,
+        'gasPrice': w3.to_wei('10', 'gwei')
+    })
+    
+    # Sign and send transaction
+    signed_tx = w3.eth.account.sign_transaction(tx, private_key=private_key)
+    tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+    
+    # Wait for confirmation
+    tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    
+    return tx_hash.hex() if tx_receipt.status == 1 else None
+\end{lstlisting}
+
+\section{Database Schema}
+
+\subsection{Local JSON Database Structure}
+
+The application uses a simple JSON file for local data storage:
+
+\begin{lstlisting}[caption=Database Schema]
+{
+    "watermark_id": {
+        "secret_message": "string",      // The embedded message
+        "ipfs_cid": "string|null",       // IPFS content identifier
+        "destroy_on_scan": "boolean"     // Single-use flag
+    }
+}
+\end{lstlisting}
+
+\subsubsection{Example Database Entry}
+
+\begin{lstlisting}[caption=Example Database Entry]
+{
+    "twMom": {
+        "message": "Authentic original of doom.jpg, created by Project Hermes on 2024-07-15 for verification.",
+        "original_image": "doom.jpg",
+        "watermarked_image": "doom_watermarked_prod.png"
+    },
+    "8GST2": {
+        "message": "WAR OF THE SPARK",
+        "original_image": "/path/to/screenshot.png",
+        "watermarked_image": "/path/to/SPARKS.png"
+    }
+}
+\end{lstlisting}
+
+\subsection{Database Operations}
+
+\subsubsection{Loading Database}
+
+\begin{lstlisting}[caption=Database Loading]
+def load_database(self):
+    if os.path.exists(DATABASE_FILE):
+        with open(DATABASE_FILE, 'r') as f:
+            return json.load(f)
+    return {}
+\end{lstlisting}
+
+\subsubsection{Saving Database}
+
+\begin{lstlisting}[caption=Database Saving]
+def save_database(self):
+    with open(DATABASE_FILE, 'w') as f:
+        json.dump(self.db, f, indent=4)
+\end{lstlisting}
+
+\subsubsection{Database Location}
+
+The database file is stored in the platform-specific application data directory:
+
+\begin{lstlisting}[caption=Database Location Configuration]
+# Get the standard application data location
+APP_DATA_PATH = QStandardPaths.writableLocation(
+    QStandardPaths.StandardLocation.AppDataLocation
+)
+
+# Create application subdirectory
+APP_DIR = os.path.join(APP_DATA_PATH, "YYS-SQR")
+os.makedirs(APP_DIR, exist_ok=True)
+
+DATABASE_FILE = os.path.join(APP_DIR, "database.json")
+\end{lstlisting}
+
+\section{Security Considerations}
+
+\subsection{Watermarking Security}
+
+\subsubsection{Error Correction}
+The YYS-SQR system employs BCH Super error correction for maximum robustness:
+\begin{itemize}
+    \item \textbf{Encoding Type}: BCH Super provides the strongest error correction available
+    \item \textbf{Resistance}: Robust against compression, scaling, and noise
+    \item \textbf{Capacity}: Optimized for 5-character identifiers
+    \item \textbf{Detection}: High confidence detection even with image degradation
+\end{itemize}
+
+\subsubsection{Single-Use SQRs}
+Enhanced security through self-destructing watermarks:
+\begin{itemize}
+    \item \textbf{Mechanism}: Database entry deleted after first successful scan
+    \item \textbf{Use Cases}: High-security applications, one-time verification
+    \item \textbf{Implementation}: Flag-based deletion in decode process
+    \item \textbf{Irreversibility}: No recovery mechanism for deleted entries
+\end{itemize}
+
+\subsection{Blockchain Security}
+
+\subsubsection{Network Selection}
+\begin{itemize}
+    \item \textbf{Testnet Usage}: Sepolia testnet for development and testing
+    \item \textbf{Chain Verification}: Automatic network validation
+    \item \textbf{Gas Management}: Fixed gas limits to prevent excessive costs
+    \item \textbf{Transaction Confirmation}: Receipt verification for reliability
+\end{itemize}
+
+\subsubsection{Private Key Handling}
+\begin{itemize}
+    \item \textbf{Input Method}: Password-masked input field
+    \item \textbf{Storage}: No persistent storage of private keys
+    \item \textbf{Scope}: Session-only key usage
+    \item \textbf{Validation}: Account derivation for verification
+\end{itemize}
+
+\subsection{IPFS Security}
+
+\subsubsection{Access Control}
+\begin{itemize}
+    \item \textbf{API Keys}: Hardcoded Filebase credentials (development only)
+    \item \textbf{Bucket Access}: Restricted to specific S3 bucket
+    \item \textbf{Upload Validation}: File existence and metadata verification
+    \item \textbf{Error Handling}: Graceful degradation on upload failures
+\end{itemize}
+
+\section{Error Handling and Troubleshooting}
+
+\subsection{Common Error Scenarios}
+
+\subsubsection{Watermarking Errors}
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}p{4cm}p{6cm}p{4cm}@{}}
+\toprule
+\textbf{Error} & \textbf{Cause} & \textbf{Solution} \\
+\midrule
+No watermark detected & Poor image quality, incorrect corners & Retake photo, adjust corner selection \\
+Encoding failed & Unsupported image format & Convert to PNG/JPG \\
+Message too long & Exceeds watermark capacity & Shorten message \\
+\bottomrule
+\end{tabular}
+\caption{Watermarking Error Scenarios}
+\end{table}
+
+\subsubsection{Blockchain Errors}
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}p{4cm}p{6cm}p{4cm}@{}}
+\toprule
+\textbf{Error} & \textbf{Cause} & \textbf{Solution} \\
+\midrule
+Wrong network & Connected to mainnet instead of Sepolia & Check RPC URL configuration \\
+Insufficient gas & Low gas limit or price & Increase gas parameters \\
+Invalid private key & Malformed or incorrect key & Verify key format \\
+Transaction timeout & Network congestion & Retry with higher gas price \\
+\bottomrule
+\end{tabular}
+\caption{Blockchain Error Scenarios}
+\end{table}
+
+\subsubsection{IPFS Upload Errors}
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}p{4cm}p{6cm}p{4cm}@{}}
+\toprule
+\textbf{Error} & \textbf{Cause} & \textbf{Solution} \\
+\midrule
+Upload failed & Network connectivity issues & Check internet connection \\
+Access denied & Invalid API credentials & Verify Filebase configuration \\
+File not found & Incorrect file path & Check file existence \\
+\bottomrule
+\end{tabular}
+\caption{IPFS Upload Error Scenarios}
+\end{table}
+
+\subsection{Debugging Features}
+
+\subsubsection{Verbose Logging}
+The watermarking engine provides detailed logging for debugging:
+\begin{lstlisting}[caption=Verbose Logging Configuration]
+# Initialize watermarking engine with verbose output
+tm = trustmark.TrustMark(verbose=True, 
+                       encoding_type=trustmark.TrustMark.Encoding.BCH_SUPER)
+\end{lstlisting}
+
+\subsubsection{Status Display}
+Real-time status updates in the GUI:
+\begin{itemize}
+    \item \textbf{Embedding Progress}: Step-by-step process feedback
+    \item \textbf{Decoding Results}: Detailed extraction information
+    \item \textbf{Transaction Status}: Blockchain operation progress
+    \item \textbf{Error Messages}: User-friendly error descriptions
+\end{itemize}
+
+\section{Performance Optimization}
+
+\subsection{Image Processing Optimization}
+
+\subsubsection{Computer Vision Memory Management}
+\begin{itemize}
+    \item \textbf{OpenCV Optimization}: Efficient image scaling and transformation
+    \item \textbf{NumPy Arrays}: Optimized array operations for perspective correction
+    \item \textbf{Format Conversion}: Efficient RGB/BGR conversion between OpenCV and PIL
+    \item \textbf{Memory Usage}: Optimized for large image processing with minimal overhead
+\end{itemize}
+
+\subsubsection{Computer Vision Processing Speed}
+\begin{itemize}
+    \item \textbf{OpenCV Perspective Correction}: Optimized fixed output dimensions (1024x1024)
+    \item \textbf{Real-time Corner Detection}: Interactive visual feedback during selection
+    \item \textbf{Parallel Processing}: Asynchronous UI updates during OpenCV operations
+    \item \textbf{Image Caching}: Efficient display caching with automatic scaling
+\end{itemize}
+
+\subsection{Network Optimization}
+
+\subsubsection{Blockchain Transactions}
+\begin{itemize}
+    \item \textbf{Gas Optimization}: Fixed gas limits for predictable costs
+    \item \textbf{Timeout Handling}: Extended timeouts for public RPCs
+    \item \textbf{Connection Pooling}: Efficient Web3 connection management
+    \item \textbf{Error Recovery}: Graceful handling of network failures
+\end{itemize}
+
+\subsubsection{IPFS Uploads}
+\begin{itemize}
+    \item \textbf{S3 Compatibility}: Efficient Filebase API usage
+    \item \textbf{Metadata Retrieval}: Optimized CID extraction
+    \item \textbf{Upload Validation}: Comprehensive error checking
+    \item \textbf{Retry Logic}: Automatic retry on transient failures
+\end{itemize}
+
+\section{Testing and Validation}
+
+\subsection{Unit Testing}
+
+\subsubsection{Watermarking Tests}
+\begin{lstlisting}[caption=Watermarking Test Example]
+def test_perspective_correction():
+    """Test YYS-SQR computer vision perspective correction."""
+    # Load test image with OpenCV
+    test_image = cv2.imread("test_photo.jpg")
+    
+    # Define test corner coordinates (simulating user clicks)
+    corners = np.float32([[100, 50], [400, 60], [390, 350], [110, 340]])
+    
+    # Define destination rectangle
+    dest_points = np.float32([[0, 0], [300, 0], [300, 300], [0, 300]])
+    
+    # Calculate transformation matrix using OpenCV
+    matrix = cv2.getPerspectiveTransform(corners, dest_points)
+    
+    # Apply perspective correction
+    corrected = cv2.warpPerspective(test_image, matrix, (300, 300))
+    
+    # Validate correction
+    assert corrected.shape == (300, 300, 3)
+    assert corrected is not None
+\end{lstlisting}
+
+\subsubsection{Database Tests}
+\begin{lstlisting}[caption=Database Test Example]
+def test_database_operations():
+    """Test database save and load operations."""
+    # Create test database
+    test_db = {
+        "TEST1": {
+            "secret_message": "Test message",
+            "ipfs_cid": "QmTest123",
+            "destroy_on_scan": False
+        }
+    }
+    
+    # Save database
+    with open("test_db.json", 'w') as f:
+        json.dump(test_db, f)
+    
+    # Load database
+    with open("test_db.json", 'r') as f:
+        loaded_db = json.load(f)
+    
+    # Validate
+    assert loaded_db == test_db
+\end{lstlisting}
+
+\subsection{Integration Testing}
+
+\subsubsection{End-to-End Workflow}
+\begin{enumerate}
+    \item \textbf{Image Selection}: Load test image
+    \item \textbf{Message Input}: Enter test message
+    \item \textbf{Watermark Embedding}: Generate watermarked image
+    \item \textbf{Photo Simulation}: Create perspective-distorted version
+    \item \textbf{Corner Detection}: Simulate user corner selection
+    \item \textbf{Perspective Correction}: Apply transformation
+    \item \textbf{Watermark Extraction}: Decode embedded message
+    \item \textbf{Database Validation}: Verify stored data retrieval
+\end{enumerate}
+
+\subsubsection{Blockchain Integration Testing}
+\begin{enumerate}
+    \item \textbf{Network Connection}: Verify Sepolia testnet connectivity
+    \item \textbf{Account Creation}: Test private key to account conversion
+    \item \textbf{Contract Interaction}: Validate smart contract calls
+    \item \textbf{Transaction Submission}: Test transaction broadcasting
+    \item \textbf{Receipt Verification}: Confirm transaction success
+    \item \textbf{Etherscan Integration}: Validate transaction URL generation
+\end{enumerate}
+
+\section{Deployment and Distribution}
+
+\subsection{Application Packaging}
+
+\subsubsection{macOS Application Bundle}
+The system includes a setup.py for creating macOS application bundles:
+
+\begin{lstlisting}[caption=macOS Packaging Configuration]
+from setuptools import setup
+
+APP = ['main.py']
+DATA_FILES = []
+OPTIONS = {
+    'excludes': ['sitecustomize'],
+    'includes': ['PyQt6', 'web3', 'trustmark', 'requests', 'boto3', 'cv2'],
+}
+
+setup(
+    app=APP,
+    data_files=DATA_FILES,
+    options={'py2app': OPTIONS},
+    setup_requires=['py2app'],
+)
+\end{lstlisting}
+
+\subsubsection{Cross-Platform Considerations}
+\begin{itemize}
+    \item \textbf{Path Handling}: Platform-specific directory resolution
+    \item \textbf{File Dialogs}: Native file selection interfaces
+    \item \textbf{Application Data}: Standard application data directories
+    \item \textbf{Dependencies}: Platform-specific package management
+\end{itemize}
+
+\subsection{Configuration Management}
+
+\subsubsection{Environment Variables}
+For production deployment, sensitive configuration should use environment variables:
+
+\begin{lstlisting}[caption=Environment Variable Configuration]
+import os
+
+# IPFS Configuration
+FILEBASE_ACCESS_KEY = os.getenv('FILEBASE_ACCESS_KEY', 'default_key')
+FILEBASE_SECRET_KEY = os.getenv('FILEBASE_SECRET_KEY', 'default_secret')
+FILEBASE_BUCKET_NAME = os.getenv('FILEBASE_BUCKET_NAME', 'default_bucket')
+
+# Blockchain Configuration
+SEPOLIA_RPC_URL = os.getenv('SEPOLIA_RPC_URL', 'default_rpc_url')
+CONTRACT_ADDRESS = os.getenv('CONTRACT_ADDRESS', 'default_address')
+\end{lstlisting}
+
+\section{Future Enhancements}
+
+\subsection{Planned Features}
+
+\subsubsection{Enhanced Security}
+\begin{itemize}
+    \item \textbf{Hardware Wallet Integration}: Support for hardware wallets
+    \item \textbf{Multi-Signature Support}: Enhanced transaction security
+    \item \textbf{Encrypted Local Storage}: Database encryption
+    \item \textbf{Key Derivation}: HD wallet support
+\end{itemize}
+
+\subsubsection{User Experience Improvements}
+\begin{itemize}
+    \item \textbf{Batch Processing}: Multiple image processing
+    \item \textbf{Template System}: Predefined message templates
+    \item \textbf{Export/Import}: Database backup and restore
+    \item \textbf{Statistics Dashboard}: Usage analytics
+\end{itemize}
+
+\subsubsection{Technical Enhancements}
+\begin{itemize}
+    \item \textbf{Mainnet Support}: Production blockchain deployment
+    \item \textbf{Alternative Blockchains}: Multi-chain support
+    \item \textbf{Advanced Computer Vision}: Automatic corner detection
+    \item \textbf{Cloud Synchronization}: Multi-device database sync
+\end{itemize}
+
+\subsection{Scalability Considerations}
+
+\subsubsection{Database Scaling}
+\begin{itemize}
+    \item \textbf{SQLite Migration}: Structured database support
+    \item \textbf{Indexing}: Performance optimization for large datasets
+    \item \textbf{Compression}: Efficient storage of large messages
+    \item \textbf{Archiving}: Historical data management
+\end{itemize}
+
+\subsubsection{Network Optimization}
+\begin{itemize}
+    \item \textbf{CDN Integration}: Faster IPFS access
+    \item \textbf{Load Balancing}: Multiple RPC endpoints
+    \item \textbf{Caching}: Local caching of blockchain data
+    \item \textbf{Offline Mode}: Limited functionality without network
+\end{itemize}
+
+\section{Acknowledgments}
+
+The YYS-SQR system builds upon several open-source technologies and libraries:
+
+\begin{itemize}
+    \item \textbf{OpenCV}: Advanced computer vision library providing the core perspective correction and image processing capabilities that enable mobile scanning functionality.
+    \item \textbf{PyQt6}: The graphical user interface framework enabling cross-platform desktop application development.
+    \item \textbf{NumPy}: Numerical computing library for efficient image array processing and mathematical operations.
+    \item \textbf{Web3.py}: Ethereum blockchain integration library for smart contract interactions.
+    \item \textbf{Boto3}: AWS SDK enabling IPFS integration through Filebase's S3-compatible API.
+\end{itemize}
+
+We acknowledge the contributions of these projects to the open-source ecosystem and their role in enabling the YYS-SQR system's functionality.
+
+\section{Conclusion}
+
+The YYS-SQR Watermarking System represents a comprehensive solution for digital image authentication and verification. By combining advanced watermarking techniques with blockchain technology and decentralized storage, the system provides a robust platform for:
+
+\begin{itemize}
+    \item \textbf{Image Authentication}: Invisible watermarking with strong error correction
+    \item \textbf{Mobile Scanning}: User-friendly perspective correction
+    \item \textbf{Blockchain Verification}: Immutable proof-of-scan records
+    \item \textbf{Decentralized Storage}: IPFS integration for distributed access
+    \item \textbf{Security Features}: Single-use SQRs and cryptographic protection
+\end{itemize}
+
+The modular architecture and comprehensive error handling make the system suitable for both development and production environments. The extensive documentation and testing framework ensure maintainability and reliability.
+
+Future enhancements will focus on scalability, security, and user experience improvements while maintaining the core functionality and reliability that make the system effective for digital watermarking applications.
+
+\section{Appendices}
+
+\subsection{Appendix A: Smart Contract ABI}
+
+\begin{lstlisting}[caption=Complete Smart Contract ABI]
+CONTRACT_ABI = [
+    {
+        "inputs": [
+            {"internalType": "string", "name": "_uniqueId", "type": "string"},
+            {"internalType": "string", "name": "_ipfsCid", "type": "string"}
+        ],
+        "name": "recordScan",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {"indexed": True, "internalType": "address", "name": "scanner", "type": "address"},
+            {"indexed": False, "internalType": "string", "name": "uniqueId", "type": "string"},
+            {"indexed": False, "internalType": "string", "name": "ipfsCid", "type": "string"},
+            {"indexed": False, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
+        ],
+        "name": "ScanRecorded",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {"internalType": "string", "name": "_uniqueId", "type": "string"}
+        ],
+        "name": "getScanDetails",
+        "outputs": [
+            {"internalType": "address", "name": "scanner", "type": "address"},
+            {"internalType": "uint256", "name": "timestamp", "type": "uint256"},
+            {"internalType": "string", "name": "ipfsCid", "type": "string"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "string", "name": "", "type": "string"}
+        ],
+        "name": "latestScan",
+        "outputs": [
+            {"internalType": "address", "name": "scanner", "type": "address"},
+            {"internalType": "uint256", "name": "timestamp", "type": "uint256"},
+            {"internalType": "string", "name": "ipfsCid", "type": "string"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
+]
+\end{lstlisting}
+
+\subsection{Appendix B: Configuration Constants}
+
+\begin{lstlisting}[caption=System Configuration Constants]
+# Application Configuration
+APP_DIR = os.path.join(APP_DATA_PATH, "YYS-SQR")
+DATABASE_FILE = os.path.join(APP_DIR, "database.json")
+ID_LENGTH = 5
+ENCODING_TYPE = trustmark.TrustMark.Encoding.BCH_SUPER
+
+# Filebase S3-Compatible Configuration
+FILEBASE_ACCESS_KEY = "F27503EAB0C920092137"
+FILEBASE_SECRET_KEY = "sZtWNzcoWWZkUhHDxM2WChGjt9OYrVDMsWZ0HYW3"
+FILEBASE_BUCKET_NAME = "yys-yys"
+FILEBASE_ENDPOINT = "https://s3.filebase.com"
+
+# Web3/Blockchain Configuration
+CONTRACT_ADDRESS = "0xd8b934580fcE35a11B58C6D73aDeE468a2833fa8"
+SEPOLIA_RPC_URL = "https://sepolia.infura.io/v3/7d8b2ce49fe24184b30beb42dc1fa791"
+
+# Image Processing Configuration
+PERSPECTIVE_OUTPUT_SIZE = (1024, 1024)
+CORNER_DETECTION_THRESHOLD = 10
+\end{lstlisting}
+
+\subsection{Appendix C: Utility Scripts}
+
+The project includes several utility scripts for testing and development:
+
+\subsubsection{Capacity Check Script}
+\begin{lstlisting}[caption=check_capacity.py]
+from trustmark import TrustMark
+
+# Initialize with the same settings
+tm = TrustMark(verbose=False, model_type='Q', 
+              encoding_type=TrustMark.Encoding.BCH_SUPER)
+
+# Get the YYS-SQR watermarking capacity in bits
+capacity_bits = tm.get_capacity()
+print(f"YYS-SQR watermark capacity: {capacity_bits} bits")
+print(f"Character capacity (8 bits/char): {capacity_bits // 8} characters")
+\end{lstlisting}
+
+\subsubsection{Standalone Encoding Script}
+\begin{lstlisting}[caption=run_trustmark.py Usage]
+python run_trustmark.py --input_image /path/to/image.jpg --output_image watermarked.png
+\end{lstlisting}
+
+\subsubsection{Standalone Decoding Script}
+\begin{lstlisting}[caption=run_trustmark_decode.py Usage]
+python run_trustmark_decode.py watermarked_image.png
+\end{lstlisting}
+
+\subsubsection{Advanced Computer Vision Script}
+\begin{lstlisting}[caption=run_trustmark_manual_decode.py Usage]
+# Advanced perspective correction with OpenCV integration
+python run_trustmark_manual_decode.py photo_of_watermarked_image.jpg
+\end{lstlisting}
+
+\end{document}

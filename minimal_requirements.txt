@@ -1,0 +1,11 @@
+# Minimal requirements for Railway free tier
+flask==2.3.3
+flask-cors==4.0.0
+opencv-python-headless==4.8.1.78
+pillow==10.0.1
+numpy==1.24.3
+trustmark==0.8.0
+web3==6.11.0
+eth-account==0.9.0
+boto3==1.28.85
+requests==2.31.0

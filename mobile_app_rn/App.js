@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 // Import screens
 import HomeScreen from './src/screens/HomeScreen';
 import ScanScreen from './src/screens/ScanScreen';
+import ManualScanScreen from './src/screens/ManualScanScreen';
 import EmbedScreen from './src/screens/EmbedScreen';
 import ResultScreen from './src/screens/ResultScreen';
 
@@ -36,7 +37,12 @@ export default function App() {
         <Stack.Screen 
           name="Scan" 
           component={ScanScreen} 
-          options={{ title: 'Scan Watermark' }}
+          options={{ title: 'Auto Scan' }}
+        />
+        <Stack.Screen 
+          name="ManualScan" 
+          component={ManualScanScreen} 
+          options={{ title: 'Manual Scan' }}
         />
         <Stack.Screen 
           name="Embed" 
