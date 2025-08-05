@@ -1,0 +1,43 @@
+# Ignore node_modules
+node_modules/
+
+# Ignore logs
+*.log
+logs/
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore development files
+.expo/
+.vscode/
+.idea/
+
+# Ignore build artifacts
+build/
+dist/
+
+# Ignore git
+.git/
+.gitignore
+
+# Ignore large files that aren't needed for build
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+
+# Ignore documentation
+*.md
+docs/
+
+# Ignore test files
+__tests__/
+*.test.js
+*.spec.js
+
+# Ignore development scripts
+keep-expo-online.sh
+ecosystem.config.js

@@ -36,10 +36,9 @@ export default function ScanScreen({ navigation }) {
       setIsProcessing(true);
       try {
         const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.1, // Very low quality for testing
+          quality: 0.8, // Better quality for watermark detection
           base64: true,
-          skipProcessing: true,
-          // Try to reduce resolution
+          skipProcessing: false,
           exif: false,
         });
         
@@ -58,40 +57,68 @@ export default function ScanScreen({ navigation }) {
       console.log(`Original image size: ${(photo.base64.length * 0.75 / 1024 / 1024).toFixed(2)} MB`);
       console.log(`Original dimensions: ${photo.width}x${photo.height}`);
       
-      // Resize image to reduce processing time - make it even smaller for server processing
-      const resizedImage = await ImageManipulator.manipulateAsync(
-        photo.uri,
-        [{ resize: { width: 400 } }], // Much smaller - 400px max width
-        { 
-          compress: 0.2, 
-          format: ImageManipulator.SaveFormat.JPEG,
-          base64: true 
+      // Try multiple image sizes for better detection success
+      const imageSizes = [
+        { width: 1024, compress: 0.8 },
+        { width: 800, compress: 0.7 },
+        { width: 600, compress: 0.6 }
+      ];
+      
+      for (const { width: targetWidth, compress } of imageSizes) {
+        try {
+          console.log(`Trying with width: ${targetWidth}px, compression: ${compress}`);
+          
+          // Resize image for processing
+          const resizedImage = await ImageManipulator.manipulateAsync(
+            photo.uri,
+            [{ resize: { width: targetWidth } }],
+            { 
+              compress: compress, 
+              format: ImageManipulator.SaveFormat.JPEG,
+              base64: true 
+            }
+          );
+          
+          console.log(`Resized image size: ${(resizedImage.base64.length * 0.75 / 1024 / 1024).toFixed(2)} MB`);
+          console.log(`Resized dimensions: ${resizedImage.width}x${resizedImage.height}`);
+          
+          // Call our Python backend API for automatic corner detection and decoding
+          console.log('Sending resized image to API for scanning...');
+          console.log('API URL:', YYSApiService.client.defaults.baseURL);
+          
+          const result = await YYSApiService.scanWatermark(resizedImage.base64);
+          console.log('Full API response:', JSON.stringify(result, null, 2));
+          
+          if (result.success) {
+            // Success - navigate to result
+            navigation.navigate('Result', { 
+              result: result,
+              imageUri: photo.uri 
+            });
+            return; // Exit function on success
+          } else {
+            console.log(`Failed with size ${targetWidth}:`, result.error);
+            // Continue to next size
+          }
+        } catch (sizeError) {
+          console.log(`Error with size ${targetWidth}:`, sizeError.message);
+          // Continue to next size
         }
-      );
-      
-      console.log(`Resized image size: ${(resizedImage.base64.length * 0.75 / 1024 / 1024).toFixed(2)} MB`);
-      console.log(`Resized dimensions: ${resizedImage.width}x${resizedImage.height}`);
-      
-      // Call our Python backend API for automatic corner detection and decoding
-      console.log('Sending resized image to API for scanning...');
-      const result = await YYSApiService.scanWatermark(resizedImage.base64);
-      console.log('Full API response:', JSON.stringify(result, null, 2));
-      
-      if (result.success) {
-        // Navigate to result screen with the decoded data
-        navigation.navigate('Result', { 
-          result: result,
-          imageUri: photo.uri 
-        });
-      } else {
-        Alert.alert(
-          'No Watermark Found', 
-          result.error || 'Could not detect watermark in image. Try:\n• Better lighting\n• Clearer photo\n• Ensure entire watermarked image is visible'
-        );
       }
+      
+      // If we get here, all sizes failed
+      console.log('All image sizes failed');
+      Alert.alert(
+        'No Watermark Found', 
+        'Could not detect watermark with automatic scanning. Try:\n• Better lighting\n• Clearer photo\n• Use Manual Scan instead'
+      );
+
     } catch (error) {
       console.error('Error processing image:', error);
-      Alert.alert('Error', 'Failed to process image. Check your connection.');
+      Alert.alert(
+        'Processing Error', 
+        `Failed to process image: ${error.message}\n\nTry:\n• Check internet connection\n• Use Manual Scan instead\n• Restart the app`
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -194,6 +221,14 @@ export default function ScanScreen({ navigation }) {
                 <Text style={styles.buttonText}>📷 Scan Now</Text>
               )}
             </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.button, styles.manualButton]}
+              onPress={() => navigation.navigate('ManualScan')}
+              disabled={isProcessing}
+            >
+              <Text style={styles.buttonText}>✏️ Manual</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </CameraView>
@@ -275,14 +310,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center',
     paddingBottom: 50,
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
   },
   button: {
     backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderRadius: 25,
-    minWidth: 120,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderRadius: 20,
+    minWidth: 100,
     alignItems: 'center',
   },
   activeButton: {
@@ -293,6 +328,9 @@ const styles = StyleSheet.create({
   },
   autoScanButton: {
     backgroundColor: '#4CAF50',
+  },
+  manualButton: {
+    backgroundColor: '#FF9800',
   },
   buttonText: {
     color: '#fff',

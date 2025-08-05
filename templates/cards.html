@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}All Cards - YYS-SQR Trading Cards{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-list me-2"></i>All Trading Cards
+            </h1>
+            <a href="{{ url_for('create_card') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Create New Card
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if cards.items %}
+<div class="row">
+    {% for card in cards.items %}
+    <div class="col-md-6 col-lg-4 col-xl-3 mb-4">
+        <div class="card h-100">
+            {% if card.watermarked_image_url %}
+            <img src="{{ card.watermarked_image_url }}" class="card-img-top" alt="{{ card.card_name }}" style="height: 250px; object-fit: cover;">
+            {% endif %}
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">{{ card.card_name }}</h5>
+                <p class="card-text flex-grow-1">
+                    {% if card.description %}
+                        {{ card.description[:100] }}{% if card.description|length > 100 %}...{% endif %}
+                    {% else %}
+                        <em class="text-muted">No description</em>
+                    {% endif %}
+                </p>
+                <div class="mt-auto">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <small class="text-muted">
+                            <span class="watermark-id">{{ card.watermark_id }}</span>
+                        </small>
+                        <span class="badge bg-{{ 'success' if card.owner_address else 'secondary' }}">
+                            {{ 'Minted' if card.owner_address else 'Available' }}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            {% if card.series %}{{ card.series }} • {% endif %}{{ card.rarity or 'Common' }}
+                        </small>
+                        <a href="{{ url_for('view_card', watermark_id=card.watermark_id) }}" class="btn btn-sm btn-outline-primary">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if cards.pages > 1 %}
+<nav aria-label="Cards pagination">
+    <ul class="pagination justify-content-center">
+        {% if cards.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('list_cards', page=cards.prev_num) }}">Previous</a>
+        </li>
+        {% endif %}
+        
+        {% for page_num in cards.iter_pages() %}
+            {% if page_num %}
+                {% if page_num != cards.page %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('list_cards', page=page_num) }}">{{ page_num }}</a>
+                </li>
+                {% else %}
+                <li class="page-item active">
+                    <span class="page-link">{{ page_num }}</span>
+                </li>
+                {% endif %}
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">…</span>
+            </li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if cards.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('list_cards', page=cards.next_num) }}">Next</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-inbox fa-4x text-muted mb-4"></i>
+    <h3 class="text-muted">No cards created yet</h3>
+    <p class="text-muted mb-4">Create your first trading card to get started!</p>
+    <a href="{{ url_for('create_card') }}" class="btn btn-primary btn-lg">
+        <i class="fas fa-plus me-2"></i>Create First Card
+    </a>
+</div>
+{% endif %}
+{% endblock %}

@@ -13,14 +13,18 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "This app uses the camera to scan watermarked images and detect hidden messages.",
-        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select images for watermark embedding and to save watermarked images."
-      }
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select images for watermark embedding and to save watermarked images.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.uriwasheres.yyssqrscanner"
     },
     "android": {
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_MEDIA_LOCATION"
       ]
     },
     "plugins": [
@@ -38,6 +42,11 @@
           "isAccessMediaLocationEnabled": true
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "ada44a60-f2a1-4e33-aeec-ecf28c87459d"
+      }
+    }
   }
 }

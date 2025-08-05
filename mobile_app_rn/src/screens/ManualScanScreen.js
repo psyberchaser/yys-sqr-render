@@ -21,24 +21,42 @@ export default function ManualScanScreen({ navigation }) {
   const [corners, setCorners] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+  const [autoResult, setAutoResult] = useState(null);
 
   const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images,
-      allowsEditing: false,
-      quality: 0.8,
-      base64: true,
-    });
+    try {
+      // Request permissions first
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Media library permission is required to select images');
+        return;
+      }
 
-    if (!result.canceled) {
-      const image = result.assets[0];
-      setSelectedImage(image);
-      setCorners([]);
-      
-      // Get image dimensions for coordinate scaling
-      Image.getSize(image.uri, (w, h) => {
-        setImageSize({ width: w, height: h });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.8,
+        base64: true,
       });
+
+      if (!result.canceled) {
+        const image = result.assets[0];
+        setSelectedImage(image);
+        setCorners([]);
+        setAutoResult(null);
+        
+        // Get image dimensions for coordinate scaling
+        Image.getSize(image.uri, (w, h) => {
+          const newImageSize = { width: w, height: h };
+          setImageSize(newImageSize);
+          
+          // Try automatic corner detection after we have image dimensions
+          tryAutomaticCornerDetection(image, newImageSize);
+        });
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
     }
   };
 
@@ -49,8 +67,147 @@ export default function ManualScanScreen({ navigation }) {
     }
 
     const { locationX, locationY } = event.nativeEvent;
-    const newCorner = { x: locationX, y: locationY };
+    
+    // Account for image display scaling - convert touch coordinates to actual image coordinates
+    const displayWidth = width - 40;
+    const displayHeight = height * 0.5;
+    
+    // Calculate the actual displayed image dimensions (considering aspect ratio)
+    const imageAspectRatio = imageSize.width / imageSize.height;
+    const displayAspectRatio = displayWidth / displayHeight;
+    
+    let actualDisplayWidth, actualDisplayHeight, offsetX = 0, offsetY = 0;
+    
+    if (imageAspectRatio > displayAspectRatio) {
+      // Image is wider - fit to width
+      actualDisplayWidth = displayWidth;
+      actualDisplayHeight = displayWidth / imageAspectRatio;
+      offsetY = (displayHeight - actualDisplayHeight) / 2;
+    } else {
+      // Image is taller - fit to height
+      actualDisplayHeight = displayHeight;
+      actualDisplayWidth = displayHeight * imageAspectRatio;
+      offsetX = (displayWidth - actualDisplayWidth) / 2;
+    }
+    
+    // Convert touch coordinates to image coordinates
+    const imageX = ((locationX - offsetX) / actualDisplayWidth) * imageSize.width;
+    const imageY = ((locationY - offsetY) / actualDisplayHeight) * imageSize.height;
+    
+    // Store both display coordinates (for rendering markers) and image coordinates
+    const newCorner = { 
+      x: locationX, 
+      y: locationY,
+      imageX: Math.max(0, Math.min(imageSize.width, imageX)),
+      imageY: Math.max(0, Math.min(imageSize.height, imageY))
+    };
+    
+    console.log('Touch:', locationX, locationY, '-> Image:', imageX, imageY);
     setCorners([...corners, newCorner]);
+  };
+
+  const tryAutomaticCornerDetection = async (image, imgSize = imageSize) => {
+    try {
+      console.log('Trying automatic corner detection...');
+      console.log('Image size:', imgSize);
+      
+      // Resize image for processing
+      const resizedImage = await ImageManipulator.manipulateAsync(
+        image.uri,
+        [{ resize: { width: 800 } }],
+        { 
+          compress: 0.5, 
+          format: ImageManipulator.SaveFormat.JPEG,
+          base64: true 
+        }
+      );
+
+      console.log('Resized image:', resizedImage.width, 'x', resizedImage.height);
+
+      // Try automatic scanning first
+      const result = await YYSApiService.scanWatermark(resizedImage.base64);
+      console.log('API result:', result);
+      
+      if (result.success) {
+        console.log('Auto-detection successful:', result);
+        setAutoResult(result);
+        
+        if (result.corners && result.corners.length === 4) {
+          console.log('Auto-detected corners:', result.corners);
+          
+          // Convert API corners (from resized image) back to original image coordinates
+          const scaleX = imgSize.width / resizedImage.width;
+          const scaleY = imgSize.height / resizedImage.height;
+          
+          // Convert to display coordinates for rendering markers
+          const displayWidth = width - 40;
+          const displayHeight = height * 0.5;
+          const imageAspectRatio = imgSize.width / imgSize.height;
+          const displayAspectRatio = displayWidth / displayHeight;
+          
+          let actualDisplayWidth, actualDisplayHeight, offsetX = 0, offsetY = 0;
+          
+          if (imageAspectRatio > displayAspectRatio) {
+            actualDisplayWidth = displayWidth;
+            actualDisplayHeight = displayWidth / imageAspectRatio;
+            offsetY = (displayHeight - actualDisplayHeight) / 2;
+          } else {
+            actualDisplayHeight = displayHeight;
+            actualDisplayWidth = displayHeight * imageAspectRatio;
+            offsetX = (displayWidth - actualDisplayWidth) / 2;
+          }
+          
+          const scaledCorners = result.corners.map(corner => {
+            // Convert from resized image to original image coordinates
+            const imageX = corner[0] * scaleX;
+            const imageY = corner[1] * scaleY;
+            
+            // Convert to display coordinates
+            const displayX = (imageX / imgSize.width) * actualDisplayWidth + offsetX;
+            const displayY = (imageY / imgSize.height) * actualDisplayHeight + offsetY;
+            
+            return {
+              x: displayX,
+              y: displayY,
+              imageX: imageX,
+              imageY: imageY
+            };
+          });
+          
+          setCorners(scaledCorners);
+        }
+        
+        Alert.alert(
+          'Auto-Detection Success!', 
+          `Found watermark: "${result.watermark_id}"\nMethod: ${result.method}`,
+          [
+            { 
+              text: 'Use Auto Result', 
+              onPress: () => {
+                // Use the automatic detection result directly
+                navigation.navigate('Result', { 
+                  result: result,
+                  imageUri: image.uri 
+                });
+              }
+            },
+            { text: 'Adjust Manually', style: 'cancel' }
+          ]
+        );
+      } else {
+        console.log('Auto-detection failed, manual selection required');
+        Alert.alert(
+          'Manual Selection Required', 
+          'Could not detect corners automatically. Please tap the 4 corners of the watermarked area.'
+        );
+      }
+    } catch (error) {
+      console.error('Auto-detection error:', error);
+      Alert.alert(
+        'Manual Selection Required', 
+        'Automatic detection failed. Please tap the 4 corners manually.'
+      );
+    }
   };
 
   const resetCorners = () => {
@@ -82,13 +239,13 @@ export default function ManualScanScreen({ navigation }) {
         }
       );
 
-      // Scale corners to match resized image
+      // Use the image coordinates and scale to resized image
       const scaleX = resizedImage.width / imageSize.width;
       const scaleY = resizedImage.height / imageSize.height;
       
       const scaledCorners = corners.map(corner => [
-        corner.x * scaleX,
-        corner.y * scaleY
+        (corner.imageX || corner.x) * scaleX,
+        (corner.imageY || corner.y) * scaleY
       ]);
 
       console.log('Sending manual corners:', scaledCorners);
@@ -118,11 +275,12 @@ export default function ManualScanScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Manual Corner Selection</Text>
+      <Text style={styles.title}>Smart Watermark Scanner</Text>
       <Text style={styles.subtitle}>
         1. Select an image{'\n'}
-        2. Tap the 4 corners of the watermarked area{'\n'}
-        3. Tap "Scan Watermark"
+        2. Auto-detection will try to find corners{'\n'}
+        3. Manually adjust corners if needed{'\n'}
+        4. Tap "Scan Watermark"
       </Text>
 
       {!selectedImage ? (
@@ -172,11 +330,32 @@ export default function ManualScanScreen({ navigation }) {
               
               <TouchableOpacity 
                 style={[styles.button, styles.secondaryButton]} 
-                onPress={pickImage}
+                onPress={() => tryAutomaticCornerDetection(selectedImage)}
               >
-                <Text style={styles.buttonText}>New Image</Text>
+                <Text style={styles.buttonText}>Auto-Detect</Text>
               </TouchableOpacity>
             </View>
+
+            <TouchableOpacity 
+              style={[styles.button, styles.secondaryButton]} 
+              onPress={pickImage}
+            >
+              <Text style={styles.buttonText}>New Image</Text>
+            </TouchableOpacity>
+
+            {autoResult && (
+              <TouchableOpacity
+                style={[styles.button, styles.autoButton]}
+                onPress={() => navigation.navigate('Result', { 
+                  result: autoResult,
+                  imageUri: selectedImage.uri 
+                })}
+              >
+                <Text style={styles.buttonText}>
+                  ✅ Use Auto Result: "{autoResult.watermark_id}"
+                </Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={[
@@ -279,6 +458,10 @@ const styles = StyleSheet.create({
   },
   scanButton: {
     backgroundColor: '#4CAF50',
+    marginTop: 10,
+  },
+  autoButton: {
+    backgroundColor: '#FF9800',
     marginTop: 10,
   },
   disabledButton: {

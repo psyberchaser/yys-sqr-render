@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: yys-sqr-webapp
+    env: python
+    plan: starter
+    buildCommand: pip install -r requirements-webapp.txt
+    startCommand: python webapp_server.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.4
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: yys-sqr-db
+          property: connectionString
+
+databases:
+  - name: yys-sqr-db
+    databaseName: yys_sqr_trading_cards
+    user: yys_sqr_user

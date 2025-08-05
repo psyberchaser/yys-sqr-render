@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - YYS-SQR Trading Cards{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-tachometer-alt me-2"></i>
+            Trading Cards Dashboard
+        </h1>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_cards }}</h4>
+                        <p class="card-text">Total Cards</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-layer-group fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ minted_cards }}</h4>
+                        <p class="card-text">Minted NFTs</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-coins fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_cards - minted_cards }}</h4>
+                        <p class="card-text">Available to Mint</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-gift fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <a href="{{ url_for('create_card') }}" class="btn btn-primary btn-lg w-100 mb-3">
+                            <i class="fas fa-plus me-2"></i>Create New Card
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="{{ url_for('list_cards') }}" class="btn btn-outline-primary btn-lg w-100 mb-3">
+                            <i class="fas fa-list me-2"></i>View All Cards
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Cards -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock me-2"></i>Recent Cards
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_cards %}
+                    <div class="row">
+                        {% for card in recent_cards %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100">
+                                {% if card.watermarked_image_url %}
+                                <img src="{{ card.watermarked_image_url }}" class="card-img-top" alt="{{ card.card_name }}" style="height: 200px; object-fit: cover;">
+                                {% endif %}
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ card.card_name }}</h6>
+                                    <p class="card-text">
+                                        <small class="text-muted">
+                                            ID: {{ card.watermark_id }}<br>
+                                            {% if card.series %}Series: {{ card.series }}<br>{% endif %}
+                                            Rarity: {{ card.rarity or 'Common' }}
+                                        </small>
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-{{ 'success' if card.owner_address else 'secondary' }}">
+                                            {{ 'Minted' if card.owner_address else 'Available' }}
+                                        </span>
+                                        <a href="{{ url_for('view_card', watermark_id=card.watermark_id) }}" class="btn btn-sm btn-outline-primary">
+                                            View Details
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No cards created yet</h5>
+                        <p class="text-muted">Create your first trading card to get started!</p>
+                        <a href="{{ url_for('create_card') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Create First Card
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

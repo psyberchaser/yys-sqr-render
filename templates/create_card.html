@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Create Card - YYS-SQR Trading Cards{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-plus me-2"></i>Create New Trading Card
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Card Information</h5>
+            </div>
+            <div class="card-body">
+                <form id="createCardForm">
+                    <div class="mb-3">
+                        <label for="cardName" class="form-label">Card Name *</label>
+                        <input type="text" class="form-control" id="cardName" name="card_name" required>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="series" class="form-label">Series</label>
+                                <input type="text" class="form-control" id="series" name="series" placeholder="e.g., Genesis Collection">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="rarity" class="form-label">Rarity</label>
+                                <select class="form-select" id="rarity" name="rarity">
+                                    <option value="Common">Common</option>
+                                    <option value="Uncommon">Uncommon</option>
+                                    <option value="Rare">Rare</option>
+                                    <option value="Epic">Epic</option>
+                                    <option value="Legendary">Legendary</option>
+                                    <option value="Mythic">Mythic</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" placeholder="Enter detailed description, lore, or story..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="creatorAddress" class="form-label">Creator Address</label>
+                        <input type="text" class="form-control" id="creatorAddress" name="creator_address" placeholder="0x...">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="cardImage" class="form-label">Card Image *</label>
+                        <input type="file" class="form-control" id="cardImage" accept="image/*" required>
+                        <div class="form-text">Upload the original card image. A watermarked version will be generated automatically.</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg" id="createBtn">
+                            <i class="fas fa-magic me-2"></i>Create Card & Generate Watermark
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Preview</h5>
+            </div>
+            <div class="card-body">
+                <div id="imagePreview" class="text-center mb-3" style="display: none;">
+                    <img id="previewImg" src="" alt="Preview" class="img-fluid rounded" style="max-height: 300px;">
+                </div>
+                <div id="noPreview" class="text-center text-muted py-5">
+                    <i class="fas fa-image fa-3x mb-3"></i>
+                    <p>Upload an image to see preview</p>
+                </div>
+                
+                <div id="cardInfo" style="display: none;">
+                    <h6>Card Details:</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>Name:</strong> <span id="previewName">-</span></li>
+                        <li><strong>Series:</strong> <span id="previewSeries">-</span></li>
+                        <li><strong>Rarity:</strong> <span id="previewRarity">Common</span></li>
+                        <li><strong>Watermark ID:</strong> <span class="text-success">Auto-generated</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">How it Works</h5>
+            </div>
+            <div class="card-body">
+                <ol class="small">
+                    <li>Upload your card image and fill in details</li>
+                    <li>System generates a unique 5-character watermark ID</li>
+                    <li>Watermark is embedded invisibly into the image</li>
+                    <li>Card is added to the database</li>
+                    <li>Users can scan the physical card to claim the NFT</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle me-2"></i>Card Created Successfully!
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Original Image:</h6>
+                        <img id="originalImage" src="" alt="Original" class="img-fluid rounded mb-3">
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Watermarked Image:</h6>
+                        <img id="watermarkedImage" src="" alt="Watermarked" class="img-fluid rounded mb-3">
+                    </div>
+                </div>
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle me-2"></i>Watermark ID: <span id="generatedId" class="fw-bold"></span></h6>
+                    <p class="mb-0">This ID has been invisibly embedded in the image. Users can scan the physical card to claim the digital twin!</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="" id="viewCardBtn" class="btn btn-primary">View Card Details</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('createCardForm');
+    const imageInput = document.getElementById('cardImage');
+    const previewImg = document.getElementById('previewImg');
+    const imagePreview = document.getElementById('imagePreview');
+    const noPreview = document.getElementById('noPreview');
+    const cardInfo = document.getElementById('cardInfo');
+    const createBtn = document.getElementById('createBtn');
+
+    // Form field references for preview
+    const nameField = document.getElementById('cardName');
+    const seriesField = document.getElementById('series');
+    const rarityField = document.getElementById('rarity');
+
+    // Preview updates
+    function updatePreview() {
+        document.getElementById('previewName').textContent = nameField.value || '-';
+        document.getElementById('previewSeries').textContent = seriesField.value || '-';
+        document.getElementById('previewRarity').textContent = rarityField.value;
+        
+        if (nameField.value) {
+            cardInfo.style.display = 'block';
+        }
+    }
+
+    nameField.addEventListener('input', updatePreview);
+    seriesField.addEventListener('input', updatePreview);
+    rarityField.addEventListener('change', updatePreview);
+
+    // Image preview
+    imageInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                imagePreview.style.display = 'block';
+                noPreview.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Form submission
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const file = imageInput.files[0];
+        
+        if (!file) {
+            alert('Please select an image file');
+            return;
+        }
+
+        // Convert image to base64
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const base64 = e.target.result.split(',')[1]; // Remove data:image/...;base64, prefix
+            
+            const data = {
+                card_name: formData.get('card_name'),
+                description: formData.get('description'),
+                series: formData.get('series'),
+                rarity: formData.get('rarity'),
+                creator_address: formData.get('creator_address'),
+                image: base64
+            };
+
+            // Show loading state
+            createBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Card...';
+            createBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/cards', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Show success modal
+                    document.getElementById('originalImage').src = `data:image/png;base64,${base64}`;
+                    document.getElementById('watermarkedImage').src = `data:image/png;base64,${result.watermarked_image}`;
+                    document.getElementById('generatedId').textContent = result.card.watermark_id;
+                    document.getElementById('viewCardBtn').href = `/card/${result.card.watermark_id}`;
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('successModal'));
+                    modal.show();
+                    
+                    // Reset form
+                    form.reset();
+                    imagePreview.style.display = 'none';
+                    noPreview.style.display = 'block';
+                    cardInfo.style.display = 'none';
+                } else {
+                    alert('Error creating card: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error creating card: ' + error.message);
+            } finally {
+                // Reset button
+                createBtn.innerHTML = '<i class="fas fa-magic me-2"></i>Create Card & Generate Watermark';
+                createBtn.disabled = false;
+            }
+        };
+        
+        reader.readAsDataURL(file);
+    });
+});
+</script>
+{% endblock %}

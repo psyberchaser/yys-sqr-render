@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}{{ card.card_name }} - YYS-SQR Trading Cards{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('list_cards') }}">All Cards</a></li>
+                <li class="breadcrumb-item active">{{ card.card_name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Card Images</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if card.image_url %}
+                    <div class="col-md-6 mb-3">
+                        <h6>Original Image:</h6>
+                        <img src="{{ card.image_url }}" alt="Original {{ card.card_name }}" class="img-fluid rounded">
+                    </div>
+                    {% endif %}
+                    {% if card.watermarked_image_url %}
+                    <div class="col-md-6 mb-3">
+                        <h6>Watermarked Image:</h6>
+                        <img src="{{ card.watermarked_image_url }}" alt="Watermarked {{ card.card_name }}" class="img-fluid rounded">
+                        <small class="text-muted d-block mt-1">Contains invisible watermark: {{ card.watermark_id }}</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Card Details</h5>
+            </div>
+            <div class="card-body">
+                <h3>{{ card.card_name }}</h3>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-4"><strong>Watermark ID:</strong></div>
+                    <div class="col-sm-8">
+                        <span class="watermark-id">{{ card.watermark_id }}</span>
+                        <button class="btn btn-sm btn-outline-secondary ms-2 copy-btn" data-copy="{{ card.watermark_id }}" title="Copy ID">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                {% if card.series %}
+                <div class="row mb-3">
+                    <div class="col-sm-4"><strong>Series:</strong></div>
+                    <div class="col-sm-8">{{ card.series }}</div>
+                </div>
+                {% endif %}
+                
+                <div class="row mb-3">
+                    <div class="col-sm-4"><strong>Rarity:</strong></div>
+                    <div class="col-sm-8">
+                        <span class="badge bg-primary">{{ card.rarity or 'Common' }}</span>
+                    </div>
+                </div>
+                
+                {% if card.description %}
+                <div class="row mb-3">
+                    <div class="col-sm-4"><strong>Description:</strong></div>
+                    <div class="col-sm-8">{{ card.description }}</div>
+                </div>
+                {% endif %}
+                
+                {% if card.creator_address %}
+                <div class="row mb-3">
+                    <div class="col-sm-4"><strong>Creator:</strong></div>
+                    <div class="col-sm-8">
+                        <code>{{ card.creator_address }}</code>
+                        <button class="btn btn-sm btn-outline-secondary ms-2 copy-btn" data-copy="{{ card.creator_address }}" title="Copy Address">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="row mb-3">
+                    <div class="col-sm-4"><strong>Created:</strong></div>
+                    <div class="col-sm-8">{{ card.created_at.strftime('%B %d, %Y at %I:%M %p') if card.created_at else 'N/A' }}</div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-4"><strong>Scan Count:</strong></div>
+                    <div class="col-sm-8">{{ card.scan_count }} times</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">NFT Status</h5>
+            </div>
+            <div class="card-body">
+                {% if card.owner_address %}
+                <div class="alert alert-success">
+                    <h6><i class="fas fa-check-circle me-2"></i>Minted as NFT</h6>
+                    <p class="mb-2"><strong>Owner:</strong> <code>{{ card.owner_address }}</code></p>
+                    {% if card.nft_token_id %}
+                    <p class="mb-2"><strong>Token ID:</strong> {{ card.nft_token_id }}</p>
+                    {% endif %}
+                    {% if card.mint_transaction_hash %}
+                    <p class="mb-2"><strong>Transaction:</strong> 
+                        <a href="https://sepolia.etherscan.io/tx/{{ card.mint_transaction_hash }}" target="_blank" class="text-decoration-none">
+                            {{ card.mint_transaction_hash[:10] }}...{{ card.mint_transaction_hash[-8:] }}
+                            <i class="fas fa-external-link-alt ms-1"></i>
+                        </a>
+                    </p>
+                    {% endif %}
+                    <p class="mb-0"><strong>Minted:</strong> {{ card.minted_at.strftime('%B %d, %Y at %I:%M %p') if card.minted_at else 'N/A' }}</p>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-gift me-2"></i>Available for Minting</h6>
+                    <p class="mb-0">This card is ready to be claimed! The first person to scan the physical card will receive the NFT.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if scans %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2"></i>Scan History ({{ scans|length }} scans)
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Scanner</th>
+                                <th>First Scan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for scan in scans %}
+                            <tr>
+                                <td>{{ scan.scanned_at.strftime('%m/%d/%Y %I:%M %p') if scan.scanned_at else 'N/A' }}</td>
+                                <td>
+                                    {% if scan.scanner_address %}
+                                        <code>{{ scan.scanner_address[:10] }}...{{ scan.scanner_address[-6:] }}</code>
+                                    {% else %}
+                                        <em class="text-muted">Anonymous</em>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if scan.was_first_scan %}
+                                        <span class="badge bg-success">Yes</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">No</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
