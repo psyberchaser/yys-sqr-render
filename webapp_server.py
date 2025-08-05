@@ -415,6 +415,124 @@ def api_scan_manual():
             'timestamp': datetime.now().isoformat()
         }), 500
 
+# ============================================================================
+# MOBILE APP COMPATIBILITY ENDPOINTS
+# ============================================================================
+
+@app.route('/api/health')
+@app.route('/health')  # Mobile app compatibility
+def health_compat():
+    """Health check - mobile app compatibility"""
+    return health()
+
+@app.route('/api/capacity')
+@app.route('/capacity')  # Mobile app compatibility
+def capacity():
+    """Get watermark capacity information"""
+    if not tm:
+        return jsonify({'error': 'TrustMark not available'}), 503
+    
+    try:
+        capacity = tm.schemaCapacity()
+        return jsonify({
+            'capacity_characters': capacity,
+            'encoding': 'BCH_SUPER',
+            'max_message_length': 5,
+            'status': 'available'
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to get capacity: {str(e)}'}), 500
+
+@app.route('/api/methods')
+@app.route('/methods')  # Mobile app compatibility
+def detection_methods():
+    """Get available detection methods"""
+    return jsonify({
+        'methods': [
+            'automatic_corner_detection',
+            'manual_corner_selection'
+        ],
+        'default': 'automatic_corner_detection',
+        'status': 'available'
+    })
+
+@app.route('/api/embed', methods=['POST'])
+@app.route('/embed', methods=['POST'])  # Mobile app compatibility
+def embed():
+    """Embed watermark - mobile app compatibility"""
+    if not tm:
+        return jsonify({
+            'error': 'Watermarking not available',
+            'details': 'TrustMark failed to initialize'
+        }), 503
+    
+    try:
+        data = request.get_json()
+        if not data or 'image' not in data or 'message' not in data:
+            return jsonify({'error': 'Missing image or message data'}), 400
+        
+        message = str(data['message']).strip()
+        if len(message) > 5:
+            return jsonify({'error': 'Message too long (max 5 characters)'}), 400
+        
+        if not message:
+            return jsonify({'error': 'Message cannot be empty'}), 400
+        
+        logger.info(f"🔒 Embedding message: '{message}'")
+        
+        # Decode and validate image
+        try:
+            image_data = base64.b64decode(data['image'])
+            image = Image.open(io.BytesIO(image_data)).convert('RGB')
+            logger.info(f"📊 Image size: {image.size}")
+        except Exception as e:
+            return jsonify({'error': f'Invalid image data: {str(e)}'}), 400
+        
+        # Embed watermark using TrustMark
+        try:
+            watermarked_image = tm.encode(image, message)
+            
+            # Convert to base64
+            buffer = io.BytesIO()
+            watermarked_image.save(buffer, format='PNG')
+            watermarked_base64 = base64.b64encode(buffer.getvalue()).decode()
+            
+            logger.info(f"✅ Embedding successful: '{message}'")
+            
+            return jsonify({
+                'success': True,
+                'message': message,
+                'watermarked_image': watermarked_base64,
+                'timestamp': datetime.now().isoformat(),
+                'server': 'render-enhanced'
+            })
+            
+        except Exception as e:
+            logger.error(f"💥 Embedding error: {e}")
+            return jsonify({'error': f'Failed to embed watermark: {str(e)}'}), 500
+            
+    except Exception as e:
+        logger.error(f"💥 Embed endpoint error: {e}")
+        return jsonify({'error': f'Internal error: {str(e)}'}), 500
+
+@app.route('/api/scan/batch', methods=['POST'])
+@app.route('/scan/batch', methods=['POST'])  # Mobile app compatibility
+def batch_scan():
+    """Batch scan multiple images"""
+    return jsonify({
+        'error': 'Batch scanning not implemented yet',
+        'details': 'Use individual scan endpoints instead'
+    }), 501
+
+@app.route('/api/scan/visualize', methods=['POST'])
+@app.route('/scan/visualize', methods=['POST'])  # Mobile app compatibility
+def visualize_detection():
+    """Visualize corner detection process"""
+    return jsonify({
+        'error': 'Visualization not implemented yet',
+        'details': 'Use regular scan endpoints instead'
+    }), 501
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)

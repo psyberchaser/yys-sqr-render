@@ -21,11 +21,14 @@ export default function HomeScreen({ navigation }) {
 
   const checkServerStatus = async () => {
     try {
-      await YYSApiService.healthCheck();
+      console.log('Checking server health at:', YYSApiService.client.defaults.baseURL);
+      const result = await YYSApiService.healthCheck();
+      console.log('Health check result:', result);
       setServerStatus('online');
     } catch (error) {
       setServerStatus('offline');
       console.error('Server health check failed:', error);
+      console.error('Error details:', error.message);
     }
   };
 
