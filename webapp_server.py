@@ -18,7 +18,7 @@ from database import db, TradingCard, ScanHistory
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-print("🚀 Starting YYS-SQR Enhanced Server...")
+print("🚀 Starting YYS-SQR Enhanced Server v2.1...")
 
 # Import watermarking modules
 detector = None
