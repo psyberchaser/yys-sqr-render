@@ -102,9 +102,12 @@ def health():
     """Health check with database status"""
     try:
         # Test database connection
-        db.session.execute('SELECT 1')
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
+        db.session.commit()
         db_status = True
-    except:
+    except Exception as e:
+        logger.error(f"Database connection failed: {e}")
         db_status = False
     
     components = {
