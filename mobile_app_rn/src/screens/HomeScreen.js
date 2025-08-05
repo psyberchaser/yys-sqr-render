@@ -21,14 +21,25 @@ export default function HomeScreen({ navigation }) {
 
   const checkServerStatus = async () => {
     try {
-      console.log('Checking server health at:', YYSApiService.client.defaults.baseURL);
+      console.log('🔍 Checking server health at:', YYSApiService.client.defaults.baseURL);
+      console.log('🔍 Full health URL:', YYSApiService.client.defaults.baseURL + '/health');
+      
       const result = await YYSApiService.healthCheck();
-      console.log('Health check result:', result);
-      setServerStatus('online');
+      console.log('✅ Health check result:', result);
+      
+      // If we get any response, server is working
+      if (result) {
+        setServerStatus('online');
+        console.log('✅ Server marked as online - response received:', result);
+      } else {
+        setServerStatus('offline');
+        console.log('❌ Server response empty');
+      }
     } catch (error) {
       setServerStatus('offline');
-      console.error('Server health check failed:', error);
-      console.error('Error details:', error.message);
+      console.error('❌ Server health check failed:', error);
+      console.error('❌ Error details:', error.message);
+      console.error('❌ Error response:', error.response?.data);
     }
   };
 
@@ -42,32 +53,10 @@ export default function HomeScreen({ navigation }) {
   };
 
   const navigateToScan = () => {
-    if (serverStatus !== 'online') {
-      Alert.alert(
-        'Server Offline',
-        'The YYS-SQR backend server is not available. Please check your connection and try again.',
-        [
-          { text: 'Retry', onPress: checkServerStatus },
-          { text: 'Cancel', style: 'cancel' },
-        ]
-      );
-      return;
-    }
     navigation.navigate('Scan');
   };
 
   const navigateToEmbed = () => {
-    if (serverStatus !== 'online') {
-      Alert.alert(
-        'Server Offline',
-        'The YYS-SQR backend server is not available. Please check your connection and try again.',
-        [
-          { text: 'Retry', onPress: checkServerStatus },
-          { text: 'Cancel', style: 'cancel' },
-        ]
-      );
-      return;
-    }
     navigation.navigate('Embed');
   };
 
@@ -118,7 +107,6 @@ export default function HomeScreen({ navigation }) {
         <TouchableOpacity
           style={[styles.button, styles.scanButton]}
           onPress={navigateToScan}
-          disabled={serverStatus !== 'online'}
         >
           <Text style={styles.buttonIcon}>📷</Text>
           <Text style={styles.buttonText}>Auto Scan</Text>
@@ -130,7 +118,6 @@ export default function HomeScreen({ navigation }) {
         <TouchableOpacity
           style={[styles.button, styles.manualButton]}
           onPress={() => navigation.navigate('ManualScan')}
-          disabled={serverStatus !== 'online'}
         >
           <Text style={styles.buttonIcon}>👆</Text>
           <Text style={styles.buttonText}>Manual Scan</Text>
@@ -142,7 +129,6 @@ export default function HomeScreen({ navigation }) {
         <TouchableOpacity
           style={[styles.button, styles.embedButton]}
           onPress={navigateToEmbed}
-          disabled={serverStatus !== 'online'}
         >
           <Text style={styles.buttonIcon}>🔒</Text>
           <Text style={styles.buttonText}>Embed Watermark</Text>

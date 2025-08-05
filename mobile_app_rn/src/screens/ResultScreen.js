@@ -69,10 +69,28 @@ export default function ResultScreen({ route, navigation }) {
         <View style={styles.resultContainer}>
           {/* Main Result */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>📝 Decoded Message</Text>
-            <Text style={styles.messageText}>
-              "{result.secret_message || result.watermark_id}"
+            <Text style={styles.cardTitle}>
+              {result.card ? '🎴 Trading Card Found!' : '📝 Decoded Message'}
             </Text>
+            {result.card ? (
+              <View>
+                <Text style={styles.cardNameText}>{result.card.card_name}</Text>
+                {result.card.description && (
+                  <Text style={styles.descriptionText}>{result.card.description}</Text>
+                )}
+                <View style={styles.cardMetaContainer}>
+                  {result.card.series && (
+                    <Text style={styles.metaText}>📚 Series: {result.card.series}</Text>
+                  )}
+                  <Text style={styles.metaText}>💎 Rarity: {result.card.rarity || 'Common'}</Text>
+                  <Text style={styles.metaText}>🔢 ID: {result.watermark_id}</Text>
+                </View>
+              </View>
+            ) : (
+              <Text style={styles.messageText}>
+                "{result.secret_message || result.watermark_id}"
+              </Text>
+            )}
           </View>
 
           {/* Watermark Details */}
@@ -82,16 +100,41 @@ export default function ResultScreen({ route, navigation }) {
               <Text style={styles.detailLabel}>Watermark ID:</Text>
               <Text style={styles.detailValue}>{result.watermark_id}</Text>
             </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Confidence:</Text>
-              <Text style={styles.detailValue}>
-                {(result.confidence * 100).toFixed(1)}%
-              </Text>
-            </View>
+            {result.confidence && (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Confidence:</Text>
+                <Text style={styles.detailValue}>
+                  {(result.confidence * 100).toFixed(1)}%
+                </Text>
+              </View>
+            )}
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Method:</Text>
               <Text style={styles.detailValue}>{result.method}</Text>
             </View>
+            {result.card && (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Scans:</Text>
+                <Text style={styles.detailValue}>{result.card.scan_count} times</Text>
+              </View>
+            )}
+            {result.card && result.card.is_minted && (
+              <View style={styles.nftContainer}>
+                <Text style={styles.nftText}>
+                  🎯 This card is already minted as an NFT!
+                </Text>
+                <Text style={styles.nftOwnerText}>
+                  Owner: {result.card.owner_address?.substring(0, 10)}...
+                </Text>
+              </View>
+            )}
+            {result.card && !result.card.is_minted && result.is_first_scan && (
+              <View style={styles.claimContainer}>
+                <Text style={styles.claimText}>
+                  🎉 You're the first to scan this card! You can claim the NFT!
+                </Text>
+              </View>
+            )}
             {result.was_destroyed && (
               <View style={styles.warningContainer}>
                 <Text style={styles.warningText}>
@@ -246,6 +289,60 @@ const styles = StyleSheet.create({
     padding: 15,
     backgroundColor: '#e3f2fd',
     borderRadius: 8,
+  },
+  cardNameText: {
+    fontSize: 24,
+    color: '#2196F3',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  descriptionText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 15,
+    fontStyle: 'italic',
+  },
+  cardMetaContainer: {
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 8,
+  },
+  metaText: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 4,
+  },
+  nftContainer: {
+    backgroundColor: '#e8f5e8',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  nftText: {
+    color: '#2e7d32',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  nftOwnerText: {
+    color: '#2e7d32',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  claimContainer: {
+    backgroundColor: '#fff3e0',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  claimText: {
+    color: '#f57c00',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   detailRow: {
     flexDirection: 'row',
