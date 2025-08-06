@@ -124,6 +124,52 @@ class YYSApiService {
   }
 
   /**
+   * Create wallet for user
+   */
+  async createWallet(email) {
+    try {
+      const response = await this.client.post('/wallet/create', {
+        email: email,
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('API Error - createWallet:', error);
+      throw new Error(error.response?.data?.error || 'Network error');
+    }
+  }
+
+  /**
+   * Get wallet balance
+   */
+  async getWalletBalance(walletAddress) {
+    try {
+      const response = await this.client.get(`/wallet/balance/${walletAddress}`);
+      return response.data;
+    } catch (error) {
+      console.error('API Error - getWalletBalance:', error);
+      throw new Error(error.response?.data?.error || 'Network error');
+    }
+  }
+
+  /**
+   * Claim NFT for scanned card
+   */
+  async claimNFT(walletAddress, watermarkId) {
+    try {
+      const response = await this.client.post('/nft/claim', {
+        walletAddress: walletAddress,
+        watermarkId: watermarkId,
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('API Error - claimNFT:', error);
+      throw new Error(error.response?.data?.error || 'Network error');
+    }
+  }
+
+  /**
    * Health check
    */
   async healthCheck() {

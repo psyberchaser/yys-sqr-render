@@ -14,6 +14,12 @@ import io
 # Import our existing modules
 from database import db, TradingCard, ScanHistory
 
+# Blockchain and wallet imports
+import secrets
+import hashlib
+from web3 import Web3
+from eth_account import Account
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -56,6 +62,27 @@ migrate = Migrate(app, db)
 # Create tables
 with app.app_context():
     db.create_all()
+
+# ============================================================================
+# BLOCKCHAIN CONFIGURATION
+# ============================================================================
+
+# Sepolia testnet configuration
+SEPOLIA_RPC_URL = "https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161"
+CHAIN_ID = 11155111
+
+# Initialize Web3
+w3 = Web3(Web3.HTTPProvider(SEPOLIA_RPC_URL))
+
+# Server wallet for gas fees (you'll need to fund this with Sepolia ETH)
+SERVER_PRIVATE_KEY = os.environ.get('SERVER_PRIVATE_KEY', '0x' + '0' * 64)  # Replace with real key
+server_account = Account.from_key(SERVER_PRIVATE_KEY)
+
+# NFT Contract (you'll need to deploy this)
+NFT_CONTRACT_ADDRESS = os.environ.get('NFT_CONTRACT_ADDRESS', '0x1aAC41368a5B6C23e2A85B1962b389Cc1B48539D')
+
+# Simple user wallet storage (in production, use encrypted database)
+user_wallets = {}
 
 # ============================================================================
 # WEB APP ROUTES (Card Creation Interface)
@@ -416,6 +443,173 @@ def api_scan_manual():
             'error': 'Internal scan error',
             'details': str(e),
             'timestamp': datetime.now().isoformat()
+        }), 500
+
+# ============================================================================
+# WALLET & NFT ENDPOINTS
+# ============================================================================
+
+@app.route('/api/wallet/create', methods=['POST'])
+def create_wallet():
+    """Create a new Ethereum wallet for user"""
+    try:
+        data = request.get_json()
+        if not data or 'email' not in data:
+            return jsonify({'error': 'Email is required'}), 400
+        
+        email = data['email'].strip().lower()
+        if not email:
+            return jsonify({'error': 'Valid email is required'}), 400
+        
+        logger.info(f"🔐 Creating wallet for: {email}")
+        
+        # Check if user already has a wallet
+        if email in user_wallets:
+            existing_wallet = user_wallets[email]
+            logger.info(f"✅ Returning existing wallet for: {email}")
+            return jsonify({
+                'success': True,
+                'walletAddress': existing_wallet['address'],
+                'message': 'Wallet already exists'
+            })
+        
+        # Generate new Ethereum wallet
+        account = Account.create()
+        wallet_address = account.address
+        private_key = account.key.hex()
+        
+        # Store wallet (in production, encrypt this!)
+        user_wallets[email] = {
+            'address': wallet_address,
+            'private_key': private_key,
+            'created_at': datetime.now().isoformat()
+        }
+        
+        logger.info(f"✅ Created new wallet: {wallet_address} for {email}")
+        
+        return jsonify({
+            'success': True,
+            'walletAddress': wallet_address,
+            'message': 'Wallet created successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"💥 Wallet creation error: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Failed to create wallet: {str(e)}'
+        }), 500
+
+@app.route('/api/wallet/balance/<wallet_address>')
+def get_wallet_balance(wallet_address):
+    """Get wallet balance from Sepolia"""
+    try:
+        if not w3.is_address(wallet_address):
+            return jsonify({'error': 'Invalid wallet address'}), 400
+        
+        # Get balance from Sepolia
+        balance_wei = w3.eth.get_balance(wallet_address)
+        balance_eth = w3.from_wei(balance_wei, 'ether')
+        
+        logger.info(f"💰 Balance for {wallet_address}: {balance_eth} ETH")
+        
+        return jsonify({
+            'success': True,
+            'balance': f"{balance_eth:.4f}",
+            'balanceWei': str(balance_wei),
+            'network': 'sepolia'
+        })
+        
+    except Exception as e:
+        logger.error(f"💥 Balance check error: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Failed to get balance: {str(e)}'
+        }), 500
+
+@app.route('/api/nft/claim', methods=['POST'])
+def claim_nft():
+    """Claim NFT for scanned card"""
+    try:
+        data = request.get_json()
+        if not data or 'walletAddress' not in data or 'watermarkId' not in data:
+            return jsonify({'error': 'Wallet address and watermark ID required'}), 400
+        
+        wallet_address = data['walletAddress']
+        watermark_id = data['watermarkId']
+        
+        logger.info(f"🎯 NFT claim request: {watermark_id} → {wallet_address}")
+        
+        # Validate wallet address
+        if not w3.is_address(wallet_address):
+            return jsonify({'error': 'Invalid wallet address'}), 400
+        
+        # Check if card exists
+        card = TradingCard.query.get(watermark_id)
+        if not card:
+            return jsonify({'error': 'Card not found'}), 404
+        
+        # Check if already claimed
+        if card.owner_address:
+            return jsonify({
+                'success': False,
+                'error': 'NFT already claimed',
+                'owner': card.owner_address
+            }), 400
+        
+        # TODO: Mint NFT to user's wallet
+        # For now, just mark as claimed
+        card.owner_address = wallet_address
+        card.minted_at = datetime.now()
+        
+        # Record the claim
+        scan = ScanHistory(
+            watermark_id=watermark_id,
+            scanner_address=wallet_address,
+            was_first_scan=True
+        )
+        db.session.add(scan)
+        db.session.commit()
+        
+        logger.info(f"✅ NFT claimed: {watermark_id} → {wallet_address}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'NFT claimed successfully',
+            'card': card.to_dict(),
+            'transactionHash': '0x' + secrets.token_hex(32)  # Mock transaction hash
+        })
+        
+    except Exception as e:
+        logger.error(f"💥 NFT claim error: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Failed to claim NFT: {str(e)}'
+        }), 500
+
+@app.route('/api/wallet/list')
+def list_wallets():
+    """List all created wallets (admin endpoint)"""
+    try:
+        wallets = []
+        for email, wallet_info in user_wallets.items():
+            wallets.append({
+                'email': email,
+                'address': wallet_info['address'],
+                'created_at': wallet_info['created_at']
+            })
+        
+        return jsonify({
+            'success': True,
+            'wallets': wallets,
+            'count': len(wallets)
+        })
+        
+    except Exception as e:
+        logger.error(f"💥 Wallet list error: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Failed to list wallets: {str(e)}'
         }), 500
 
 # ============================================================================

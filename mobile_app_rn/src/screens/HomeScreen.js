@@ -136,6 +136,17 @@ export default function HomeScreen({ navigation }) {
             Hide secret messages in images
           </Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.walletButton]}
+          onPress={() => navigation.navigate('Wallet')}
+        >
+          <Text style={styles.buttonIcon}>💰</Text>
+          <Text style={styles.buttonText}>Your Wallet</Text>
+          <Text style={styles.buttonSubtext}>
+            Create wallet to claim NFTs from scanned cards
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.footer}>
@@ -226,6 +237,10 @@ const styles = StyleSheet.create({
   embedButton: {
     borderLeftWidth: 5,
     borderLeftColor: '#2196F3',
+  },
+  walletButton: {
+    borderLeftWidth: 5,
+    borderLeftColor: '#9C27B0',
   },
   buttonIcon: {
     fontSize: 40,

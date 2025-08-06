@@ -10,11 +10,14 @@ import {
   Alert,
   Linking,
   Share,
+  ActivityIndicator,
 } from 'react-native';
+import YYSApiService from '../services/YYSApiService';
 
 export default function ResultScreen({ route, navigation }) {
   const { result, imageUri } = route.params;
   const [showDetails, setShowDetails] = useState(false);
+  const [isClaimingNFT, setIsClaimingNFT] = useState(false);
 
   const handleShare = async () => {
     try {
@@ -49,6 +52,26 @@ export default function ResultScreen({ route, navigation }) {
 
   const goHome = () => {
     navigation.navigate('Home');
+  };
+
+  const claimNFT = async () => {
+    try {
+      // First, check if user has a wallet
+      Alert.alert(
+        'Claim NFT',
+        'You need a wallet to claim this NFT. Would you like to create one?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Create Wallet', 
+            onPress: () => navigation.navigate('Wallet')
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('NFT claim error:', error);
+      Alert.alert('Error', 'Failed to claim NFT. Please try again.');
+    }
   };
 
   return (
@@ -133,6 +156,17 @@ export default function ResultScreen({ route, navigation }) {
                 <Text style={styles.claimText}>
                   🎉 You're the first to scan this card! You can claim the NFT!
                 </Text>
+                <TouchableOpacity 
+                  style={styles.claimButton}
+                  onPress={claimNFT}
+                  disabled={isClaimingNFT}
+                >
+                  {isClaimingNFT ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.claimButtonText}>🎯 Claim NFT</Text>
+                  )}
+                </TouchableOpacity>
               </View>
             )}
             {result.was_destroyed && (
@@ -343,6 +377,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
+    marginBottom: 12,
+  },
+  claimButton: {
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  claimButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   detailRow: {
     flexDirection: 'row',

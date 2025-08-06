@@ -10,6 +10,7 @@ import ScanScreen from './src/screens/ScanScreen';
 import ManualScanScreen from './src/screens/ManualScanScreen';
 import EmbedScreen from './src/screens/EmbedScreen';
 import ResultScreen from './src/screens/ResultScreen';
+import WalletScreen from './src/screens/WalletScreen';
 
 const Stack = createStackNavigator();
 
@@ -53,6 +54,11 @@ export default function App() {
           name="Result" 
           component={ResultScreen} 
           options={{ title: 'Scan Result' }}
+        />
+        <Stack.Screen 
+          name="Wallet" 
+          component={WalletScreen} 
+          options={{ title: 'Your Wallet' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
