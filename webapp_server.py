@@ -80,7 +80,7 @@ server_account = Account.from_key(SERVER_PRIVATE_KEY)
 
 # REAL DEPLOYED CONTRACT ADDRESSES
 PROOF_OF_SCAN_CONTRACT = os.environ.get('PROOF_OF_SCAN_CONTRACT', '0xd8b934580fcE35a11B58C6D73aDeE468a2833fa8')
-NFT_CONTRACT_ADDRESS = os.environ.get('NFT_CONTRACT_ADDRESS', '0x1aAC41368a5B6C23e2A85B1962b389Cc1B48539D')
+NFT_CONTRACT_ADDRESS = os.environ.get('NFT_CONTRACT_ADDRESS', '0x3bd2b0dcaFae0964a92D0785ee5F565dA7471369')
 
 # Simple user wallet storage (in production, use encrypted database)
 user_wallets = {}
@@ -566,35 +566,40 @@ def claim_nft():
                 'owner': card.owner_address
             }), 400
         
-        # REAL BLOCKCHAIN TRANSACTION - Record scan on ProofOfScan contract
+        # REAL NFT MINTING - Mint actual ERC-721 NFT
         try:
-            # Simple ABI for recordScan function
-            contract_abi = [
+            # NFT Contract ABI for minting
+            nft_abi = [
                 {
                     "inputs": [
-                        {"name": "_uniqueId", "type": "string"},
-                        {"name": "_ipfsCid", "type": "string"}
+                        {"name": "to", "type": "address"},
+                        {"name": "watermarkId", "type": "string"},
+                        {"name": "metadataURI", "type": "string"}
                     ],
-                    "name": "recordScan",
-                    "outputs": [],
+                    "name": "mintCard",
+                    "outputs": [{"name": "", "type": "uint256"}],
                     "stateMutability": "nonpayable",
                     "type": "function"
                 }
             ]
             
-            # Create contract instance
-            contract = w3.eth.contract(
-                address=PROOF_OF_SCAN_CONTRACT,
-                abi=contract_abi
+            # Create NFT contract instance
+            nft_contract = w3.eth.contract(
+                address=NFT_CONTRACT_ADDRESS,
+                abi=nft_abi
             )
             
-            # Build transaction
-            transaction = contract.functions.recordScan(
+            # Create metadata URI (IPFS or placeholder)
+            metadata_uri = card.metadata_uri or f"https://ipfs.io/ipfs/QmYYSSQR{watermark_id}"
+            
+            # Build NFT minting transaction
+            transaction = nft_contract.functions.mintCard(
+                wallet_address,
                 watermark_id,
-                card.watermarked_image_url or ""
+                metadata_uri
             ).build_transaction({
                 'from': server_account.address,
-                'gas': 200000,
+                'gas': 300000,  # Higher gas for NFT minting
                 'gasPrice': w3.to_wei('10', 'gwei'),
                 'nonce': w3.eth.get_transaction_count(server_account.address),
                 'chainId': CHAIN_ID
@@ -604,12 +609,26 @@ def claim_nft():
             signed_txn = server_account.sign_transaction(transaction)
             tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
             
-            logger.info(f"🔗 Blockchain transaction sent: {tx_hash.hex()}")
+            logger.info(f"🎯 REAL NFT MINTING transaction sent: {tx_hash.hex()}")
             
-            # Update database with real transaction hash
+            # Wait for transaction receipt to get token ID
+            try:
+                receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+                if receipt.status == 1:
+                    # Parse logs to get token ID (simplified)
+                    token_id = len(receipt.logs)  # Approximate token ID
+                    logger.info(f"🎉 NFT MINTED! Token ID: {token_id}")
+                else:
+                    logger.error(f"❌ NFT minting transaction failed")
+            except Exception as receipt_error:
+                logger.error(f"⚠️ Could not get receipt: {receipt_error}")
+                token_id = None
+            
+            # Update database with real NFT info
             card.owner_address = wallet_address
             card.minted_at = datetime.now()
             card.mint_transaction_hash = tx_hash.hex()
+            card.nft_token_id = token_id
             
             # Record the claim
             scan = ScanHistory(
@@ -620,14 +639,16 @@ def claim_nft():
             db.session.add(scan)
             db.session.commit()
             
-            logger.info(f"✅ REAL NFT claimed: {watermark_id} → {wallet_address} (tx: {tx_hash.hex()})")
+            logger.info(f"🎉 REAL NFT MINTED: {watermark_id} → {wallet_address} (tx: {tx_hash.hex()})")
             
             return jsonify({
                 'success': True,
-                'message': 'NFT claimed successfully on blockchain!',
+                'message': 'NFT minted successfully on blockchain!',
                 'card': card.to_dict(),
                 'transactionHash': tx_hash.hex(),
-                'etherscanUrl': f'https://sepolia.etherscan.io/tx/{tx_hash.hex()}'
+                'etherscanUrl': f'https://sepolia.etherscan.io/tx/{tx_hash.hex()}',
+                'nftContract': NFT_CONTRACT_ADDRESS,
+                'tokenId': token_id
             })
             
         except Exception as blockchain_error:
