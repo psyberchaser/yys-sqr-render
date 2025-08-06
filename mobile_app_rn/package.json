@@ -26,7 +26,8 @@
     "react-native-screens": "~4.11.1",
     "react-native-svg": "15.11.2",
     "expo-image-manipulator": "~13.1.7",
-    "expo-updates": "~0.28.17"
+    "expo-updates": "~0.28.17",
+    "@react-native-async-storage/async-storage": "1.23.1"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0"

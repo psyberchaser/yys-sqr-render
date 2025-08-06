@@ -275,11 +275,14 @@ def api_scan():
                     # Update scan count
                     card.scan_count += 1
                     
+                    # Check if this is the first scan (before updating scan count)
+                    is_first_scan = card.owner_address is None
+                    
                     # Record scan history
                     scan = ScanHistory(
                         watermark_id=watermark_id,
                         scanner_address=data.get('scanner_address'),
-                        was_first_scan=(card.owner_address is None)
+                        was_first_scan=is_first_scan
                     )
                     db.session.add(scan)
                     db.session.commit()
@@ -288,7 +291,8 @@ def api_scan():
                     result.update({
                         'card': card.to_dict(),
                         'scan_count': card.scan_count,
-                        'is_first_scan': card.owner_address is None
+                        'is_first_scan': is_first_scan,
+                        'can_claim_nft': is_first_scan
                     })
                     
                     logger.info(f"✅ Enhanced scan successful: {watermark_id}")
@@ -388,11 +392,14 @@ def api_scan_manual():
                     # Update scan count
                     card.scan_count += 1
                     
+                    # Check if this is the first scan (before updating scan count)
+                    is_first_scan = card.owner_address is None
+                    
                     # Record scan history
                     scan = ScanHistory(
                         watermark_id=secret_id,
                         scanner_address=data.get('scanner_address'),
-                        was_first_scan=(card.owner_address is None)
+                        was_first_scan=is_first_scan
                     )
                     db.session.add(scan)
                     db.session.commit()
@@ -405,7 +412,8 @@ def api_scan_manual():
                         'corners': corners,
                         'card': card.to_dict(),
                         'scan_count': card.scan_count,
-                        'is_first_scan': card.owner_address is None,
+                        'is_first_scan': is_first_scan,
+                        'can_claim_nft': is_first_scan,
                         'timestamp': datetime.now().isoformat(),
                         'server': 'render-enhanced'
                     })

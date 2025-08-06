@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import YYSApiService from '../services/YYSApiService';
 
 export default function WalletScreen({ navigation }) {
@@ -24,9 +25,18 @@ export default function WalletScreen({ navigation }) {
   }, []);
 
   const checkExistingWallet = async () => {
-    // Check if user already has a wallet (stored locally)
-    // In a real app, you'd use AsyncStorage or SecureStore
-    console.log('Checking for existing wallet...');
+    try {
+      // Check if user already has a wallet stored locally
+      const storedWallet = await AsyncStorage.getItem('user_wallet');
+      if (storedWallet) {
+        const walletData = JSON.parse(storedWallet);
+        setWalletInfo(walletData);
+        console.log('✅ Found existing wallet:', walletData.walletAddress);
+        await updateBalance(walletData.walletAddress);
+      }
+    } catch (error) {
+      console.error('Error checking existing wallet:', error);
+    }
   };
 
   const createWallet = async () => {
@@ -42,12 +52,16 @@ export default function WalletScreen({ navigation }) {
       const response = await YYSApiService.createWallet(email.trim());
       
       if (response.success) {
-        setWalletInfo({
+        const walletData = {
           email: email.trim(),
           walletAddress: response.walletAddress,
           isConnected: true,
-        });
+        };
         
+        // Store wallet info locally
+        await AsyncStorage.setItem('user_wallet', JSON.stringify(walletData));
+        
+        setWalletInfo(walletData);
         Alert.alert('Success', 'Wallet created successfully!');
       } else {
         Alert.alert('Error', response.error || 'Failed to create wallet');
@@ -60,11 +74,12 @@ export default function WalletScreen({ navigation }) {
     }
   };
 
-  const getBalance = async () => {
-    if (!walletInfo?.walletAddress) return;
+  const updateBalance = async (address) => {
+    const walletAddress = address || walletInfo?.walletAddress;
+    if (!walletAddress) return;
     
     try {
-      const response = await YYSApiService.getWalletBalance(walletInfo.walletAddress);
+      const response = await YYSApiService.getWalletBalance(walletAddress);
       if (response.success) {
         setBalance(response.balance);
       }
@@ -73,10 +88,20 @@ export default function WalletScreen({ navigation }) {
     }
   };
 
-  const clearWallet = () => {
-    setWalletInfo(null);
-    setBalance('0.0000');
-    setEmail('');
+  const getBalance = async () => {
+    await updateBalance();
+  };
+
+  const clearWallet = async () => {
+    try {
+      await AsyncStorage.removeItem('user_wallet');
+      setWalletInfo(null);
+      setBalance('0.0000');
+      setEmail('');
+      Alert.alert('Success', 'Wallet cleared');
+    } catch (error) {
+      console.error('Error clearing wallet:', error);
+    }
   };
 
   const copyAddress = () => {

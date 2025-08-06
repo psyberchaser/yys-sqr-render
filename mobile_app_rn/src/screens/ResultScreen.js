@@ -12,6 +12,7 @@ import {
   Share,
   ActivityIndicator,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import YYSApiService from '../services/YYSApiService';
 
 export default function ResultScreen({ route, navigation }) {
@@ -56,21 +57,49 @@ export default function ResultScreen({ route, navigation }) {
 
   const claimNFT = async () => {
     try {
-      // First, check if user has a wallet
-      Alert.alert(
-        'Claim NFT',
-        'You need a wallet to claim this NFT. Would you like to create one?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Create Wallet', 
-            onPress: () => navigation.navigate('Wallet')
-          }
-        ]
+      setIsClaimingNFT(true);
+      
+      // Check if user has a wallet stored locally
+      const storedWallet = await AsyncStorage.getItem('user_wallet');
+      
+      if (!storedWallet) {
+        Alert.alert(
+          'Wallet Required',
+          'You need a wallet to claim this NFT. Would you like to create one?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Create Wallet', 
+              onPress: () => navigation.navigate('Wallet')
+            }
+          ]
+        );
+        return;
+      }
+      
+      const walletData = JSON.parse(storedWallet);
+      
+      // Call API to claim NFT
+      const response = await YYSApiService.claimNFT(
+        walletData.walletAddress, 
+        result.watermark_id
       );
+      
+      if (response.success) {
+        Alert.alert(
+          'NFT Claimed!',
+          `Successfully claimed NFT to your wallet!\n\nTransaction: ${response.transactionHash?.substring(0, 10)}...`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Claim Failed', response.error || 'Failed to claim NFT');
+      }
+      
     } catch (error) {
       console.error('NFT claim error:', error);
       Alert.alert('Error', 'Failed to claim NFT. Please try again.');
+    } finally {
+      setIsClaimingNFT(false);
     }
   };
 
@@ -151,7 +180,7 @@ export default function ResultScreen({ route, navigation }) {
                 </Text>
               </View>
             )}
-            {result.card && !result.card.is_minted && result.is_first_scan && (
+            {result.card && !result.card.is_minted && result.can_claim_nft && (
               <View style={styles.claimContainer}>
                 <Text style={styles.claimText}>
                   🎉 You're the first to scan this card! You can claim the NFT!
