@@ -67,18 +67,19 @@ with app.app_context():
 # BLOCKCHAIN CONFIGURATION
 # ============================================================================
 
-# Sepolia testnet configuration
-SEPOLIA_RPC_URL = "https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161"
+# Sepolia testnet configuration - USE REAL DEPLOYED VALUES
+SEPOLIA_RPC_URL = os.environ.get('SEPOLIA_RPC_URL', "https://sepolia.infura.io/v3/7d8b2ce49fe24184b30beb42dc1fa791")
 CHAIN_ID = 11155111
 
 # Initialize Web3
 w3 = Web3(Web3.HTTPProvider(SEPOLIA_RPC_URL))
 
-# Server wallet for gas fees (you'll need to fund this with Sepolia ETH)
-SERVER_PRIVATE_KEY = os.environ.get('SERVER_PRIVATE_KEY', '0x' + '0' * 64)  # Replace with real key
+# Server wallet for gas fees - USE REAL PRIVATE KEY
+SERVER_PRIVATE_KEY = os.environ.get('SERVER_PRIVATE_KEY', '0051793c860c068bbc9baeeafaec8b0cbca30a6d69b8df79ec54922ac5e27b1a')
 server_account = Account.from_key(SERVER_PRIVATE_KEY)
 
-# NFT Contract (you'll need to deploy this)
+# REAL DEPLOYED CONTRACT ADDRESSES
+PROOF_OF_SCAN_CONTRACT = os.environ.get('PROOF_OF_SCAN_CONTRACT', '0xd8b934580fcE35a11B58C6D73aDeE468a2833fa8')
 NFT_CONTRACT_ADDRESS = os.environ.get('NFT_CONTRACT_ADDRESS', '0x1aAC41368a5B6C23e2A85B1962b389Cc1B48539D')
 
 # Simple user wallet storage (in production, use encrypted database)
@@ -565,28 +566,94 @@ def claim_nft():
                 'owner': card.owner_address
             }), 400
         
-        # TODO: Mint NFT to user's wallet
-        # For now, just mark as claimed
-        card.owner_address = wallet_address
-        card.minted_at = datetime.now()
-        
-        # Record the claim
-        scan = ScanHistory(
-            watermark_id=watermark_id,
-            scanner_address=wallet_address,
-            was_first_scan=True
-        )
-        db.session.add(scan)
-        db.session.commit()
-        
-        logger.info(f"✅ NFT claimed: {watermark_id} → {wallet_address}")
-        
-        return jsonify({
-            'success': True,
-            'message': 'NFT claimed successfully',
-            'card': card.to_dict(),
-            'transactionHash': '0x' + secrets.token_hex(32)  # Mock transaction hash
-        })
+        # REAL BLOCKCHAIN TRANSACTION - Record scan on ProofOfScan contract
+        try:
+            # Simple ABI for recordScan function
+            contract_abi = [
+                {
+                    "inputs": [
+                        {"name": "_uniqueId", "type": "string"},
+                        {"name": "_ipfsCid", "type": "string"}
+                    ],
+                    "name": "recordScan",
+                    "outputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                }
+            ]
+            
+            # Create contract instance
+            contract = w3.eth.contract(
+                address=PROOF_OF_SCAN_CONTRACT,
+                abi=contract_abi
+            )
+            
+            # Build transaction
+            transaction = contract.functions.recordScan(
+                watermark_id,
+                card.watermarked_image_url or ""
+            ).build_transaction({
+                'from': server_account.address,
+                'gas': 200000,
+                'gasPrice': w3.to_wei('10', 'gwei'),
+                'nonce': w3.eth.get_transaction_count(server_account.address),
+                'chainId': CHAIN_ID
+            })
+            
+            # Sign and send transaction
+            signed_txn = server_account.sign_transaction(transaction)
+            tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
+            
+            logger.info(f"🔗 Blockchain transaction sent: {tx_hash.hex()}")
+            
+            # Update database with real transaction hash
+            card.owner_address = wallet_address
+            card.minted_at = datetime.now()
+            card.mint_transaction_hash = tx_hash.hex()
+            
+            # Record the claim
+            scan = ScanHistory(
+                watermark_id=watermark_id,
+                scanner_address=wallet_address,
+                was_first_scan=True
+            )
+            db.session.add(scan)
+            db.session.commit()
+            
+            logger.info(f"✅ REAL NFT claimed: {watermark_id} → {wallet_address} (tx: {tx_hash.hex()})")
+            
+            return jsonify({
+                'success': True,
+                'message': 'NFT claimed successfully on blockchain!',
+                'card': card.to_dict(),
+                'transactionHash': tx_hash.hex(),
+                'etherscanUrl': f'https://sepolia.etherscan.io/tx/{tx_hash.hex()}'
+            })
+            
+        except Exception as blockchain_error:
+            logger.error(f"💥 Blockchain transaction failed: {blockchain_error}")
+            
+            # Fallback to database-only claim
+            card.owner_address = wallet_address
+            card.minted_at = datetime.now()
+            
+            scan = ScanHistory(
+                watermark_id=watermark_id,
+                scanner_address=wallet_address,
+                was_first_scan=True
+            )
+            db.session.add(scan)
+            db.session.commit()
+            
+            logger.info(f"⚠️ Database-only NFT claimed (blockchain failed): {watermark_id} → {wallet_address}")
+            
+            return jsonify({
+                'success': True,
+                'message': 'NFT claimed (database only - blockchain unavailable)',
+                'card': card.to_dict(),
+                'transactionHash': None,
+                'error': str(blockchain_error)
+            })
         
     except Exception as e:
         logger.error(f"💥 NFT claim error: {e}")
