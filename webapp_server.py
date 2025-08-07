@@ -19,8 +19,13 @@ import secrets
 import hashlib
 from web3 import Web3
 from eth_account import Account
-import boto3
-from botocore.exceptions import ClientError
+try:
+    import boto3
+    from botocore.exceptions import ClientError
+    BOTO3_AVAILABLE = True
+except ImportError:
+    logger.warning("⚠️ boto3 not available - IPFS upload will be disabled")
+    BOTO3_AVAILABLE = False
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -98,6 +103,10 @@ user_wallets = {}
 
 def upload_to_ipfs(file_path, object_name=None):
     """Upload a file to Filebase and return the IPFS CID"""
+    if not BOTO3_AVAILABLE:
+        logger.warning("⚠️ boto3 not available for IPFS upload")
+        return None
+        
     if object_name is None:
         object_name = os.path.basename(file_path)
     
@@ -258,40 +267,59 @@ def api_create_card():
             logger.error(f"💥 Watermarking error: {e}")
             return jsonify({'error': f'Failed to create watermark: {str(e)}'}), 500
         
-        # Upload images to IPFS
+        # Upload images to IPFS (optional - don't fail if this doesn't work)
         original_ipfs_cid = None
         watermarked_ipfs_cid = None
         
         try:
-            # Save original image temporarily and upload to IPFS
-            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_original:
-                image.save(temp_original.name, format='PNG')
-                original_ipfs_cid = upload_to_ipfs(temp_original.name, f"{watermark_id}_original.png")
-                os.unlink(temp_original.name)
-            
-            # Save watermarked image temporarily and upload to IPFS
-            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_watermarked:
-                watermarked_image.save(temp_watermarked.name, format='PNG')
-                watermarked_ipfs_cid = upload_to_ipfs(temp_watermarked.name, f"{watermark_id}_watermarked.png")
-                os.unlink(temp_watermarked.name)
+            # Only attempt IPFS upload if boto3 is available and configured
+            if BOTO3_AVAILABLE and FILEBASE_ACCESS_KEY and FILEBASE_SECRET_KEY:
+                # Save original image temporarily and upload to IPFS
+                with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_original:
+                    image.save(temp_original.name, format='PNG')
+                    original_ipfs_cid = upload_to_ipfs(temp_original.name, f"{watermark_id}_original.png")
+                    os.unlink(temp_original.name)
+                
+                # Save watermarked image temporarily and upload to IPFS
+                with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_watermarked:
+                    watermarked_image.save(temp_watermarked.name, format='PNG')
+                    watermarked_ipfs_cid = upload_to_ipfs(temp_watermarked.name, f"{watermark_id}_watermarked.png")
+                    os.unlink(temp_watermarked.name)
+            else:
+                logger.info("📝 IPFS upload skipped - boto3 or credentials not configured")
                 
         except Exception as e:
-            logger.warning(f"⚠️ IPFS upload failed: {e}")
+            logger.warning(f"⚠️ IPFS upload failed (continuing without IPFS): {e}")
         
         # Create database record
-        card = TradingCard(
-            watermark_id=watermark_id,
-            card_name=data['card_name'],
-            description=data.get('description', ''),
-            series=data.get('series', ''),
-            rarity=data.get('rarity', 'Common'),
-            creator_address=data.get('creator_address', ''),
-            image_url=f"data:image/png;base64,{data['image']}",
-            watermarked_image_url=f"data:image/png;base64,{watermarked_base64}",
-            metadata_uri=f"https://gateway.pinata.cloud/ipfs/{original_ipfs_cid}" if original_ipfs_cid else None,
-            ipfs_cid=original_ipfs_cid,
-            watermarked_ipfs_cid=watermarked_ipfs_cid
-        )
+        try:
+            card = TradingCard(
+                watermark_id=watermark_id,
+                card_name=data['card_name'],
+                description=data.get('description', ''),
+                series=data.get('series', ''),
+                rarity=data.get('rarity', 'Common'),
+                creator_address=data.get('creator_address', ''),
+                image_url=f"data:image/png;base64,{data['image']}",
+                watermarked_image_url=f"data:image/png;base64,{watermarked_base64}",
+                metadata_uri=f"https://gateway.pinata.cloud/ipfs/{original_ipfs_cid}" if original_ipfs_cid else None,
+                ipfs_cid=original_ipfs_cid,
+                watermarked_ipfs_cid=watermarked_ipfs_cid
+            )
+        except Exception as e:
+            # Fallback for older database schema without IPFS fields
+            logger.warning(f"⚠️ Database schema might be old, creating card without IPFS fields: {e}")
+            card = TradingCard(
+                watermark_id=watermark_id,
+                card_name=data['card_name'],
+                description=data.get('description', ''),
+                series=data.get('series', ''),
+                rarity=data.get('rarity', 'Common'),
+                creator_address=data.get('creator_address', ''),
+                image_url=f"data:image/png;base64,{data['image']}",
+                watermarked_image_url=f"data:image/png;base64,{watermarked_base64}",
+                metadata_uri=f"https://gateway.pinata.cloud/ipfs/{original_ipfs_cid}" if original_ipfs_cid else None
+            )
         
         db.session.add(card)
         db.session.commit()
@@ -789,10 +817,10 @@ def get_user_nfts(wallet_address):
                     'etherscanUrl': f'https://sepolia.etherscan.io/tx/{card.mint_transaction_hash}',
                     'nftContract': NFT_CONTRACT_ADDRESS,
                     'mintedAt': card.minted_at.isoformat() if card.minted_at else None,
-                    'ipfs_cid': card.ipfs_cid,
-                    'watermarked_ipfs_cid': card.watermarked_ipfs_cid,
-                    'imageUrl': f'https://gateway.pinata.cloud/ipfs/{card.ipfs_cid}' if card.ipfs_cid else card.image_url,
-                    'watermarkedImageUrl': f'https://gateway.pinata.cloud/ipfs/{card.watermarked_ipfs_cid}' if card.watermarked_ipfs_cid else card.watermarked_image_url
+                    'ipfs_cid': getattr(card, 'ipfs_cid', None),
+                    'watermarked_ipfs_cid': getattr(card, 'watermarked_ipfs_cid', None),
+                    'imageUrl': f'https://gateway.pinata.cloud/ipfs/{card.ipfs_cid}' if getattr(card, 'ipfs_cid', None) else card.image_url,
+                    'watermarkedImageUrl': f'https://gateway.pinata.cloud/ipfs/{card.watermarked_ipfs_cid}' if getattr(card, 'watermarked_ipfs_cid', None) else card.watermarked_image_url
                 })
         
         return jsonify({
