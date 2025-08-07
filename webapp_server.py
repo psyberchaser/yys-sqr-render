@@ -609,7 +609,11 @@ def claim_nft():
             signed_txn = server_account.sign_transaction(transaction)
             tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
             
-            logger.info(f"🎯 REAL NFT MINTING transaction sent: {tx_hash.hex()}")
+            # Ensure transaction hash has 0x prefix for logging
+            tx_hash_str = tx_hash.hex()
+            if not tx_hash_str.startswith('0x'):
+                tx_hash_str = '0x' + tx_hash_str
+            logger.info(f"🎯 REAL NFT MINTING transaction sent: {tx_hash_str}")
             
             # Wait for transaction receipt to get token ID
             try:
@@ -625,9 +629,14 @@ def claim_nft():
                 token_id = None
             
             # Update database with real NFT info
+            # Ensure transaction hash has 0x prefix for storage
+            tx_hash_str = tx_hash.hex()
+            if not tx_hash_str.startswith('0x'):
+                tx_hash_str = '0x' + tx_hash_str
+                
             card.owner_address = wallet_address
             card.minted_at = datetime.now()
-            card.mint_transaction_hash = tx_hash.hex()
+            card.mint_transaction_hash = tx_hash_str
             card.nft_token_id = token_id
             
             # Record the claim
@@ -639,14 +648,19 @@ def claim_nft():
             db.session.add(scan)
             db.session.commit()
             
-            logger.info(f"🎉 REAL NFT MINTED: {watermark_id} → {wallet_address} (tx: {tx_hash.hex()})")
+            # Ensure transaction hash has 0x prefix
+            tx_hash_str = tx_hash.hex()
+            if not tx_hash_str.startswith('0x'):
+                tx_hash_str = '0x' + tx_hash_str
+            
+            logger.info(f"🎉 REAL NFT MINTED: {watermark_id} → {wallet_address} (tx: {tx_hash_str})")
             
             return jsonify({
                 'success': True,
                 'message': 'NFT minted successfully on blockchain!',
                 'card': card.to_dict(),
-                'transactionHash': tx_hash.hex(),
-                'etherscanUrl': f'https://sepolia.etherscan.io/tx/{tx_hash.hex()}',
+                'transactionHash': tx_hash_str,
+                'etherscanUrl': f'https://sepolia.etherscan.io/tx/{tx_hash_str}',
                 'nftContract': NFT_CONTRACT_ADDRESS,
                 'tokenId': token_id
             })
