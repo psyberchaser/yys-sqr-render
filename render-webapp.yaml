@@ -14,6 +14,12 @@ services:
         fromDatabase:
           name: yys-sqr-db
           property: connectionString
+      - key: FILEBASE_ACCESS_KEY
+        value: A8F8E8F8E8F8E8F8E8F8
+      - key: FILEBASE_SECRET_KEY
+        value: secret-key-here
+      - key: FILEBASE_BUCKET_NAME
+        value: yys-sqr-images
 
 databases:
   - name: yys-sqr-db

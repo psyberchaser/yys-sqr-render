@@ -291,7 +291,7 @@ def api_create_card():
         except Exception as e:
             logger.warning(f"⚠️ IPFS upload failed (continuing without IPFS): {e}")
         
-        # Create database record (without IPFS fields for now)
+        # Create database record with IPFS fields
         card = TradingCard(
             watermark_id=watermark_id,
             card_name=data['card_name'],
@@ -301,14 +301,10 @@ def api_create_card():
             creator_address=data.get('creator_address', ''),
             image_url=f"data:image/png;base64,{data['image']}",
             watermarked_image_url=f"data:image/png;base64,{watermarked_base64}",
-            metadata_uri=f"https://gateway.pinata.cloud/ipfs/{original_ipfs_cid}" if original_ipfs_cid else None
+            metadata_uri=f"https://gateway.pinata.cloud/ipfs/{original_ipfs_cid}" if original_ipfs_cid else None,
+            ipfs_cid=original_ipfs_cid,
+            watermarked_ipfs_cid=watermarked_ipfs_cid
         )
-        
-        # Add IPFS fields if they exist in the database schema
-        if hasattr(card, 'ipfs_cid'):
-            card.ipfs_cid = original_ipfs_cid
-        if hasattr(card, 'watermarked_ipfs_cid'):
-            card.watermarked_ipfs_cid = watermarked_ipfs_cid
         
         db.session.add(card)
         db.session.commit()
@@ -806,10 +802,10 @@ def get_user_nfts(wallet_address):
                     'etherscanUrl': f'https://sepolia.etherscan.io/tx/{card.mint_transaction_hash}',
                     'nftContract': NFT_CONTRACT_ADDRESS,
                     'mintedAt': card.minted_at.isoformat() if card.minted_at else None,
-                    'ipfs_cid': getattr(card, 'ipfs_cid', None),
-                    'watermarked_ipfs_cid': getattr(card, 'watermarked_ipfs_cid', None),
-                    'imageUrl': f'https://gateway.pinata.cloud/ipfs/{card.ipfs_cid}' if getattr(card, 'ipfs_cid', None) else card.image_url,
-                    'watermarkedImageUrl': f'https://gateway.pinata.cloud/ipfs/{card.watermarked_ipfs_cid}' if getattr(card, 'watermarked_ipfs_cid', None) else card.watermarked_image_url
+                    'ipfs_cid': card.ipfs_cid,
+                    'watermarked_ipfs_cid': card.watermarked_ipfs_cid,
+                    'imageUrl': f'https://gateway.pinata.cloud/ipfs/{card.ipfs_cid}' if card.ipfs_cid else card.image_url,
+                    'watermarkedImageUrl': f'https://gateway.pinata.cloud/ipfs/{card.watermarked_ipfs_cid}' if card.watermarked_ipfs_cid else card.watermarked_image_url
                 })
         
         return jsonify({
@@ -823,6 +819,35 @@ def get_user_nfts(wallet_address):
         return jsonify({
             'success': False,
             'error': 'Failed to fetch NFTs'
+        }), 500
+
+@app.route('/api/admin/migrate-database')
+def migrate_database():
+    """Add IPFS fields to database (admin endpoint)"""
+    try:
+        # Add the IPFS columns if they don't exist
+        with db.engine.connect() as conn:
+            try:
+                conn.execute(db.text("ALTER TABLE trading_cards ADD COLUMN ipfs_cid VARCHAR(100)"))
+                conn.execute(db.text("ALTER TABLE trading_cards ADD COLUMN watermarked_ipfs_cid VARCHAR(100)"))
+                conn.commit()
+                return jsonify({
+                    'success': True,
+                    'message': 'IPFS columns added successfully'
+                })
+            except Exception as e:
+                if "already exists" in str(e).lower():
+                    return jsonify({
+                        'success': True,
+                        'message': 'IPFS columns already exist'
+                    })
+                else:
+                    raise e
+    except Exception as e:
+        logger.error(f"Migration failed: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
         }), 500
 
 @app.route('/api/wallet/list')
