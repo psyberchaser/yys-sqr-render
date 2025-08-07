@@ -291,35 +291,24 @@ def api_create_card():
         except Exception as e:
             logger.warning(f"⚠️ IPFS upload failed (continuing without IPFS): {e}")
         
-        # Create database record
-        try:
-            card = TradingCard(
-                watermark_id=watermark_id,
-                card_name=data['card_name'],
-                description=data.get('description', ''),
-                series=data.get('series', ''),
-                rarity=data.get('rarity', 'Common'),
-                creator_address=data.get('creator_address', ''),
-                image_url=f"data:image/png;base64,{data['image']}",
-                watermarked_image_url=f"data:image/png;base64,{watermarked_base64}",
-                metadata_uri=f"https://gateway.pinata.cloud/ipfs/{original_ipfs_cid}" if original_ipfs_cid else None,
-                ipfs_cid=original_ipfs_cid,
-                watermarked_ipfs_cid=watermarked_ipfs_cid
-            )
-        except Exception as e:
-            # Fallback for older database schema without IPFS fields
-            logger.warning(f"⚠️ Database schema might be old, creating card without IPFS fields: {e}")
-            card = TradingCard(
-                watermark_id=watermark_id,
-                card_name=data['card_name'],
-                description=data.get('description', ''),
-                series=data.get('series', ''),
-                rarity=data.get('rarity', 'Common'),
-                creator_address=data.get('creator_address', ''),
-                image_url=f"data:image/png;base64,{data['image']}",
-                watermarked_image_url=f"data:image/png;base64,{watermarked_base64}",
-                metadata_uri=f"https://gateway.pinata.cloud/ipfs/{original_ipfs_cid}" if original_ipfs_cid else None
-            )
+        # Create database record (without IPFS fields for now)
+        card = TradingCard(
+            watermark_id=watermark_id,
+            card_name=data['card_name'],
+            description=data.get('description', ''),
+            series=data.get('series', ''),
+            rarity=data.get('rarity', 'Common'),
+            creator_address=data.get('creator_address', ''),
+            image_url=f"data:image/png;base64,{data['image']}",
+            watermarked_image_url=f"data:image/png;base64,{watermarked_base64}",
+            metadata_uri=f"https://gateway.pinata.cloud/ipfs/{original_ipfs_cid}" if original_ipfs_cid else None
+        )
+        
+        # Add IPFS fields if they exist in the database schema
+        if hasattr(card, 'ipfs_cid'):
+            card.ipfs_cid = original_ipfs_cid
+        if hasattr(card, 'watermarked_ipfs_cid'):
+            card.watermarked_ipfs_cid = watermarked_ipfs_cid
         
         db.session.add(card)
         db.session.commit()
