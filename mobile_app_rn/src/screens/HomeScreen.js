@@ -7,12 +7,15 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  ScrollView,
+  RefreshControl,
 } from 'react-native';
 import YYSApiService from '../services/YYSApiService';
 
 export default function HomeScreen({ navigation }) {
   const [serverStatus, setServerStatus] = useState('checking');
   const [capacityInfo, setCapacityInfo] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     checkServerStatus();
@@ -41,6 +44,13 @@ export default function HomeScreen({ navigation }) {
       console.error('❌ Error details:', error.message);
       console.error('❌ Error response:', error.response?.data);
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await checkServerStatus();
+    await getCapacityInfo();
+    setRefreshing(false);
   };
 
   const getCapacityInfo = async () => {
@@ -77,127 +87,219 @@ export default function HomeScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={['#2196F3']}
+          tintColor="#2196F3"
+        />
+      }
+    >
       <View style={styles.header}>
         <Text style={styles.title}>YYS-SQR</Text>
-        <Text style={styles.subtitle}>Watermark Scanner</Text>
+        <Text style={styles.subtitle}>Watermark Scanner & NFT Platform</Text>
         
-        <View style={styles.statusContainer}>
-          <Text style={[styles.statusText, { color: getStatusColor() }]}>
-            {getStatusText()}
-          </Text>
-          {serverStatus === 'checking' && (
-            <ActivityIndicator size="small" color="#FF9800" style={styles.spinner} />
+        <View style={styles.statusCard}>
+          <View style={styles.statusContainer}>
+            <Text style={[styles.statusText, { color: getStatusColor() }]}>
+              {getStatusText()}
+            </Text>
+            {serverStatus === 'checking' && (
+              <ActivityIndicator size="small" color="#FF9800" style={styles.spinner} />
+            )}
+          </View>
+          
+          <TouchableOpacity onPress={checkServerStatus} style={styles.refreshButton}>
+            <Text style={styles.refreshText}>🔄 Refresh Status</Text>
+          </TouchableOpacity>
+
+          {capacityInfo && (
+            <View style={styles.infoContainer}>
+              <Text style={styles.infoText}>
+                📊 Capacity: {capacityInfo.capacity_characters} characters
+              </Text>
+              <Text style={styles.infoText}>
+                🔒 Encoding: {capacityInfo.encoding}
+              </Text>
+            </View>
           )}
         </View>
-
-        {capacityInfo && (
-          <View style={styles.infoContainer}>
-            <Text style={styles.infoText}>
-              📊 Capacity: {capacityInfo.capacity_characters} characters
-            </Text>
-            <Text style={styles.infoText}>
-              🔒 Encoding: {capacityInfo.encoding}
-            </Text>
-          </View>
-        )}
       </View>
 
-      <View style={styles.buttonsContainer}>
-        <TouchableOpacity
-          style={[styles.button, styles.scanButton]}
-          onPress={navigateToScan}
-        >
-          <Text style={styles.buttonIcon}>📷</Text>
-          <Text style={styles.buttonText}>Auto Scan</Text>
-          <Text style={styles.buttonSubtext}>
-            Automatically detect and decode hidden messages
-          </Text>
-        </TouchableOpacity>
+      <View style={styles.actionsSection}>
+        <Text style={styles.sectionTitle}>🚀 Quick Actions</Text>
+        
+        <View style={styles.buttonGrid}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.scanButton]}
+            onPress={navigateToScan}
+          >
+            <View style={styles.buttonContent}>
+              <Text style={styles.buttonIcon}>📷</Text>
+              <Text style={styles.buttonText}>Auto Scan</Text>
+              <Text style={styles.buttonSubtext}>
+                AI-powered detection
+              </Text>
+            </View>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.button, styles.manualButton]}
-          onPress={() => navigation.navigate('ManualScan')}
-        >
-          <Text style={styles.buttonIcon}>👆</Text>
-          <Text style={styles.buttonText}>Manual Scan</Text>
-          <Text style={styles.buttonSubtext}>
-            Select 4 corners manually (more reliable)
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.manualButton]}
+            onPress={() => navigation.navigate('ManualScan')}
+          >
+            <View style={styles.buttonContent}>
+              <Text style={styles.buttonIcon}>👆</Text>
+              <Text style={styles.buttonText}>Manual Scan</Text>
+              <Text style={styles.buttonSubtext}>
+                Select corners
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity
-          style={[styles.button, styles.embedButton]}
-          onPress={navigateToEmbed}
-        >
-          <Text style={styles.buttonIcon}>🔒</Text>
-          <Text style={styles.buttonText}>Embed Watermark</Text>
-          <Text style={styles.buttonSubtext}>
-            Hide secret messages in images
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.buttonGrid}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.embedButton]}
+            onPress={navigateToEmbed}
+          >
+            <View style={styles.buttonContent}>
+              <Text style={styles.buttonIcon}>🔒</Text>
+              <Text style={styles.buttonText}>Embed</Text>
+              <Text style={styles.buttonSubtext}>
+                Hide messages
+              </Text>
+            </View>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.button, styles.walletButton]}
-          onPress={() => navigation.navigate('Wallet')}
-        >
-          <Text style={styles.buttonIcon}>💰</Text>
-          <Text style={styles.buttonText}>Your Wallet</Text>
-          <Text style={styles.buttonSubtext}>
-            Create wallet to claim NFTs from scanned cards
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.walletButton]}
+            onPress={() => navigation.navigate('Wallet')}
+          >
+            <View style={styles.buttonContent}>
+              <Text style={styles.buttonIcon}>💰</Text>
+              <Text style={styles.buttonText}>Wallet</Text>
+              <Text style={styles.buttonSubtext}>
+                Claim NFTs
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.featuresSection}>
+        <Text style={styles.sectionTitle}>✨ Features</Text>
+        
+        <View style={styles.featureCard}>
+          <Text style={styles.featureIcon}>🤖</Text>
+          <View style={styles.featureContent}>
+            <Text style={styles.featureTitle}>AI Corner Detection</Text>
+            <Text style={styles.featureDescription}>
+              Advanced computer vision automatically finds watermark boundaries
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.featureCard}>
+          <Text style={styles.featureIcon}>🎨</Text>
+          <View style={styles.featureContent}>
+            <Text style={styles.featureTitle}>NFT Integration</Text>
+            <Text style={styles.featureDescription}>
+              Scan trading cards to claim unique NFTs on Ethereum blockchain
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.featureCard}>
+          <Text style={styles.featureIcon}>🔐</Text>
+          <View style={styles.featureContent}>
+            <Text style={styles.featureTitle}>Secure Watermarking</Text>
+            <Text style={styles.featureDescription}>
+              Hide secret messages in images using advanced steganography
+            </Text>
+          </View>
+        </View>
       </View>
 
       <View style={styles.footer}>
-        <TouchableOpacity onPress={checkServerStatus} style={styles.refreshButton}>
-          <Text style={styles.refreshText}>🔄 Refresh Status</Text>
-        </TouchableOpacity>
-        
         <Text style={styles.footerText}>
-          Advanced computer vision with automatic corner detection
+          Powered by advanced computer vision & blockchain technology
         </Text>
+        <Text style={styles.versionText}>v1.0.0</Text>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-    padding: 20,
+    backgroundColor: '#f8f9fa',
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 30,
   },
   header: {
     alignItems: 'center',
-    marginTop: 40,
-    marginBottom: 40,
+    marginTop: 50,
+    marginBottom: 30,
   },
   title: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: 'bold',
     color: '#2196F3',
-    marginBottom: 5,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#666',
-    marginBottom: 20,
+    marginBottom: 25,
+    textAlign: 'center',
+  },
+  statusCard: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 15,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   statusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'center',
+    marginBottom: 15,
   },
   statusText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   spinner: {
     marginLeft: 10,
   },
-  infoContainer: {
+  refreshButton: {
+    alignSelf: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
     backgroundColor: '#e3f2fd',
+    borderRadius: 20,
+    marginBottom: 15,
+  },
+  refreshText: {
+    fontSize: 14,
+    color: '#2196F3',
+    fontWeight: '600',
+  },
+  infoContainer: {
+    backgroundColor: '#f0f8ff',
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
@@ -205,73 +307,123 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 14,
     color: '#1976d2',
-    marginBottom: 2,
+    marginBottom: 4,
+    textAlign: 'center',
   },
-  buttonsContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: 20,
+  actionsSection: {
+    marginVertical: 25,
   },
-  button: {
-    backgroundColor: '#fff',
-    padding: 25,
-    borderRadius: 15,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  scanButton: {
-    borderLeftWidth: 5,
-    borderLeftColor: '#4CAF50',
-  },
-  manualButton: {
-    borderLeftWidth: 5,
-    borderLeftColor: '#FF9800',
-  },
-  embedButton: {
-    borderLeftWidth: 5,
-    borderLeftColor: '#2196F3',
-  },
-  walletButton: {
-    borderLeftWidth: 5,
-    borderLeftColor: '#9C27B0',
-  },
-  buttonIcon: {
-    fontSize: 40,
-    marginBottom: 10,
-  },
-  buttonText: {
+  sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 5,
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  buttonGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  actionButton: {
+    backgroundColor: '#fff',
+    flex: 0.48,
+    borderRadius: 15,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  buttonContent: {
+    alignItems: 'center',
+  },
+  scanButton: {
+    borderTopWidth: 4,
+    borderTopColor: '#4CAF50',
+  },
+  manualButton: {
+    borderTopWidth: 4,
+    borderTopColor: '#FF9800',
+  },
+  embedButton: {
+    borderTopWidth: 4,
+    borderTopColor: '#2196F3',
+  },
+  walletButton: {
+    borderTopWidth: 4,
+    borderTopColor: '#9C27B0',
+  },
+  buttonIcon: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+    textAlign: 'center',
   },
   buttonSubtext: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
     textAlign: 'center',
+    lineHeight: 16,
+  },
+  featuresSection: {
+    marginVertical: 20,
+  },
+  featureCard: {
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  featureIcon: {
+    fontSize: 24,
+    marginRight: 15,
+    alignSelf: 'flex-start',
+    marginTop: 2,
+  },
+  featureContent: {
+    flex: 1,
+  },
+  featureTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  featureDescription: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
   },
   footer: {
     alignItems: 'center',
-    marginTop: 20,
-  },
-  refreshButton: {
-    padding: 10,
-    marginBottom: 10,
-  },
-  refreshText: {
-    fontSize: 16,
-    color: '#2196F3',
+    marginTop: 30,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
   },
   footerText: {
     fontSize: 12,
     color: '#999',
+    textAlign: 'center',
+    marginBottom: 5,
+  },
+  versionText: {
+    fontSize: 10,
+    color: '#ccc',
     textAlign: 'center',
   },
 });
