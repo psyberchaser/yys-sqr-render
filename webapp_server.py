@@ -32,6 +32,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # IPFS database migration completed - restart to pick up new schema
+# Retry build after network error
 
 print("🚀 Starting YYS-SQR Enhanced Server v2.1...")
 
