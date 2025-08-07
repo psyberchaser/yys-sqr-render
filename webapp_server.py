@@ -796,6 +796,10 @@ def get_user_nfts(wallet_address):
         nfts = []
         for card in owned_cards:
             if card.is_minted and card.nft_token_id:
+                # Use getattr to safely access IPFS fields that might not exist
+                ipfs_cid = getattr(card, 'ipfs_cid', None)
+                watermarked_ipfs_cid = getattr(card, 'watermarked_ipfs_cid', None)
+                
                 nfts.append({
                     'tokenId': card.nft_token_id,
                     'watermarkId': card.watermark_id,
@@ -805,10 +809,10 @@ def get_user_nfts(wallet_address):
                     'etherscanUrl': f'https://sepolia.etherscan.io/tx/{card.mint_transaction_hash}',
                     'nftContract': NFT_CONTRACT_ADDRESS,
                     'mintedAt': card.minted_at.isoformat() if card.minted_at else None,
-                    'ipfs_cid': card.ipfs_cid,
-                    'watermarked_ipfs_cid': card.watermarked_ipfs_cid,
-                    'imageUrl': f'https://gateway.pinata.cloud/ipfs/{card.ipfs_cid}' if card.ipfs_cid else card.image_url,
-                    'watermarkedImageUrl': f'https://gateway.pinata.cloud/ipfs/{card.watermarked_ipfs_cid}' if card.watermarked_ipfs_cid else card.watermarked_image_url
+                    'ipfs_cid': ipfs_cid,
+                    'watermarked_ipfs_cid': watermarked_ipfs_cid,
+                    'imageUrl': f'https://gateway.pinata.cloud/ipfs/{ipfs_cid}' if ipfs_cid else card.image_url,
+                    'watermarkedImageUrl': f'https://gateway.pinata.cloud/ipfs/{watermarked_ipfs_cid}' if watermarked_ipfs_cid else card.watermarked_image_url
                 })
         
         return jsonify({
@@ -821,7 +825,7 @@ def get_user_nfts(wallet_address):
         logger.error(f"Error fetching user NFTs: {e}")
         return jsonify({
             'success': False,
-            'error': 'Failed to fetch NFTs'
+            'error': f'Failed to fetch NFTs: {str(e)}'
         }), 500
 
 @app.route('/api/admin/migrate-database')
