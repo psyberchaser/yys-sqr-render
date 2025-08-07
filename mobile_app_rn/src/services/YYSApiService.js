@@ -170,6 +170,19 @@ class YYSApiService {
   }
 
   /**
+   * Get user's NFTs
+   */
+  async getUserNFTs(walletAddress) {
+    try {
+      const response = await this.client.get(`/wallet/${walletAddress}/nfts`);
+      return response.data;
+    } catch (error) {
+      console.error('API Error - getUserNFTs:', error);
+      throw new Error(error.response?.data?.error || 'Network error');
+    }
+  }
+
+  /**
    * Health check
    */
   async healthCheck() {

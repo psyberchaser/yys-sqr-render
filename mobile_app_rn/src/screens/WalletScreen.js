@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  Linking,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import YYSApiService from '../services/YYSApiService';
@@ -19,6 +20,8 @@ export default function WalletScreen({ navigation }) {
   const [walletInfo, setWalletInfo] = useState(null);
   const [email, setEmail] = useState('');
   const [balance, setBalance] = useState('0.0000');
+  const [userNFTs, setUserNFTs] = useState([]);
+  const [loadingNFTs, setLoadingNFTs] = useState(false);
 
   useEffect(() => {
     checkExistingWallet();
@@ -33,6 +36,7 @@ export default function WalletScreen({ navigation }) {
         setWalletInfo(walletData);
         console.log('✅ Found existing wallet:', walletData.walletAddress);
         await updateBalance(walletData.walletAddress);
+        await fetchUserNFTs(walletData.walletAddress);
       }
     } catch (error) {
       console.error('Error checking existing wallet:', error);
@@ -85,6 +89,20 @@ export default function WalletScreen({ navigation }) {
       }
     } catch (error) {
       console.error('Balance fetch error:', error);
+    }
+  };
+
+  const fetchUserNFTs = async (walletAddress) => {
+    try {
+      setLoadingNFTs(true);
+      const response = await YYSApiService.getUserNFTs(walletAddress);
+      if (response.success) {
+        setUserNFTs(response.nfts);
+      }
+    } catch (error) {
+      console.error('Error fetching NFTs:', error);
+    } finally {
+      setLoadingNFTs(false);
     }
   };
 
@@ -148,6 +166,41 @@ export default function WalletScreen({ navigation }) {
               onPress={getBalance}
             >
               <Text style={styles.refreshButtonText}>🔄 Refresh</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* NFT Collection */}
+          <View style={styles.nftCard}>
+            <Text style={styles.nftTitle}>🎨 Your NFT Collection</Text>
+            {loadingNFTs ? (
+              <ActivityIndicator size="small" color="#2196F3" />
+            ) : userNFTs.length > 0 ? (
+              <ScrollView style={styles.nftList}>
+                {userNFTs.map((nft, index) => (
+                  <View key={index} style={styles.nftItem}>
+                    <Text style={styles.nftName}>{nft.cardName}</Text>
+                    <Text style={styles.nftTokenId}>Token ID: #{nft.tokenId}</Text>
+                    <Text style={styles.nftWatermark}>Card: {nft.watermarkId}</Text>
+                    <TouchableOpacity 
+                      style={styles.nftViewButton}
+                      onPress={() => Linking.openURL(nft.etherscanUrl)}
+                    >
+                      <Text style={styles.nftViewButtonText}>View on Etherscan</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            ) : (
+              <Text style={styles.noNftsText}>
+                No NFTs yet. Scan cards to claim your first NFT!
+              </Text>
+            )}
+            
+            <TouchableOpacity 
+              style={styles.refreshButton} 
+              onPress={() => fetchUserNFTs(walletInfo.walletAddress)}
+            >
+              <Text style={styles.refreshButtonText}>🔄 Refresh NFTs</Text>
             </TouchableOpacity>
           </View>
 
@@ -429,5 +482,66 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  nftCard: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  nftTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+  },
+  nftList: {
+    maxHeight: 200,
+    marginBottom: 15,
+  },
+  nftItem: {
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  nftName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  nftTokenId: {
+    fontSize: 14,
+    color: '#2196F3',
+    marginBottom: 2,
+  },
+  nftWatermark: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+  },
+  nftViewButton: {
+    backgroundColor: '#2196F3',
+    padding: 6,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+  },
+  nftViewButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  noNftsText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginBottom: 15,
   },
 });

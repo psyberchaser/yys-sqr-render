@@ -19,6 +19,8 @@ export default function ResultScreen({ route, navigation }) {
   const { result, imageUri } = route.params;
   const [showDetails, setShowDetails] = useState(false);
   const [isClaimingNFT, setIsClaimingNFT] = useState(false);
+  const [nftClaimed, setNftClaimed] = useState(false);
+  const [claimResult, setClaimResult] = useState(null);
 
   const handleShare = async () => {
     try {
@@ -42,7 +44,8 @@ export default function ResultScreen({ route, navigation }) {
 
   const openIPFS = () => {
     if (result.ipfs_cid) {
-      const url = `https://ipfs.filebase.io/ipfs/${result.ipfs_cid}`;
+      // Use a more reliable IPFS gateway
+      const url = `https://gateway.pinata.cloud/ipfs/${result.ipfs_cid}`;
       Linking.openURL(url);
     }
   };
@@ -86,9 +89,11 @@ export default function ResultScreen({ route, navigation }) {
       );
       
       if (response.success) {
+        setNftClaimed(true);
+        setClaimResult(response);
         Alert.alert(
           'NFT Claimed!',
-          `Successfully claimed NFT to your wallet!\n\nTransaction: ${response.transactionHash?.substring(0, 10)}...`,
+          `Successfully claimed NFT to your wallet!\n\nToken ID: ${response.tokenId}\nTransaction: ${response.transactionHash?.substring(0, 10)}...`,
           [{ text: 'OK' }]
         );
       } else {
@@ -180,7 +185,8 @@ export default function ResultScreen({ route, navigation }) {
                 </Text>
               </View>
             )}
-            {result.card && !result.card.is_minted && result.can_claim_nft && (
+            {/* NFT Claim Section */}
+            {!nftClaimed && result.card && !result.card.is_minted && result.can_claim_nft && (
               <View style={styles.claimContainer}>
                 <Text style={styles.claimText}>
                   🎉 You're the first to scan this card! You can claim the NFT!
@@ -195,6 +201,27 @@ export default function ResultScreen({ route, navigation }) {
                   ) : (
                     <Text style={styles.claimButtonText}>🎯 Claim NFT</Text>
                   )}
+                </TouchableOpacity>
+              </View>
+            )}
+            
+            {/* NFT Claimed Success */}
+            {nftClaimed && claimResult && (
+              <View style={styles.successContainer}>
+                <Text style={styles.successText}>
+                  ✅ NFT Successfully Claimed!
+                </Text>
+                <Text style={styles.successDetails}>
+                  Token ID: #{claimResult.tokenId}
+                </Text>
+                <Text style={styles.successDetails}>
+                  Contract: {claimResult.nftContract?.substring(0, 10)}...
+                </Text>
+                <TouchableOpacity 
+                  style={styles.etherscanButton}
+                  onPress={() => Linking.openURL(claimResult.etherscanUrl)}
+                >
+                  <Text style={styles.etherscanButtonText}>View on Etherscan</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -418,6 +445,35 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  successContainer: {
+    backgroundColor: '#e8f5e8',
+    padding: 15,
+    borderRadius: 8,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  successText: {
+    color: '#2e7d32',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  successDetails: {
+    color: '#2e7d32',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  etherscanButton: {
+    backgroundColor: '#2196F3',
+    padding: 8,
+    borderRadius: 6,
+    marginTop: 8,
+  },
+  etherscanButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   detailRow: {
     flexDirection: 'row',

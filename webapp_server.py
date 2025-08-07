@@ -697,6 +697,40 @@ def claim_nft():
             'error': f'Failed to claim NFT: {str(e)}'
         }), 500
 
+@app.route('/api/wallet/<wallet_address>/nfts')
+def get_user_nfts(wallet_address):
+    """Get NFTs owned by a specific wallet"""
+    try:
+        # Query database for cards owned by this wallet
+        owned_cards = TradingCard.query.filter_by(owner_address=wallet_address).all()
+        
+        nfts = []
+        for card in owned_cards:
+            if card.is_minted and card.nft_token_id:
+                nfts.append({
+                    'tokenId': card.nft_token_id,
+                    'watermarkId': card.watermark_id,
+                    'cardName': card.card_name,
+                    'description': card.description,
+                    'transactionHash': card.mint_transaction_hash,
+                    'etherscanUrl': f'https://sepolia.etherscan.io/tx/{card.mint_transaction_hash}',
+                    'nftContract': NFT_CONTRACT_ADDRESS,
+                    'mintedAt': card.minted_at.isoformat() if card.minted_at else None
+                })
+        
+        return jsonify({
+            'success': True,
+            'nfts': nfts,
+            'count': len(nfts)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching user NFTs: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to fetch NFTs'
+        }), 500
+
 @app.route('/api/wallet/list')
 def list_wallets():
     """List all created wallets (admin endpoint)"""
