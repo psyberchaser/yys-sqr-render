@@ -23,6 +23,8 @@ class TradingCard(db.Model):
     image_url = db.Column(db.Text, nullable=True)
     watermarked_image_url = db.Column(db.Text, nullable=True)
     metadata_uri = db.Column(db.Text, nullable=True)
+    ipfs_cid = db.Column(db.String(100), nullable=True)  # Original image IPFS CID
+    watermarked_ipfs_cid = db.Column(db.String(100), nullable=True)  # Watermarked image IPFS CID
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -48,6 +50,8 @@ class TradingCard(db.Model):
             'image_url': self.image_url,
             'watermarked_image_url': self.watermarked_image_url,
             'metadata_uri': self.metadata_uri,
+            'ipfs_cid': self.ipfs_cid,
+            'watermarked_ipfs_cid': self.watermarked_ipfs_cid,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'owner_address': self.owner_address,
             'nft_token_id': self.nft_token_id,

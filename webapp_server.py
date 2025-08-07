@@ -19,6 +19,8 @@ import secrets
 import hashlib
 from web3 import Web3
 from eth_account import Account
+import boto3
+from botocore.exceptions import ClientError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -82,8 +84,56 @@ server_account = Account.from_key(SERVER_PRIVATE_KEY)
 PROOF_OF_SCAN_CONTRACT = os.environ.get('PROOF_OF_SCAN_CONTRACT', '0xd8b934580fcE35a11B58C6D73aDeE468a2833fa8')
 NFT_CONTRACT_ADDRESS = os.environ.get('NFT_CONTRACT_ADDRESS', '0x3bd2b0dcaFae0964a92D0785ee5F565dA7471369')
 
+# IPFS/Filebase configuration
+FILEBASE_ACCESS_KEY = os.environ.get('FILEBASE_ACCESS_KEY', 'A8F8E8F8E8F8E8F8E8F8')
+FILEBASE_SECRET_KEY = os.environ.get('FILEBASE_SECRET_KEY', 'secret-key-here')
+FILEBASE_BUCKET_NAME = os.environ.get('FILEBASE_BUCKET_NAME', 'yys-sqr-images')
+
 # Simple user wallet storage (in production, use encrypted database)
 user_wallets = {}
+
+# ============================================================================
+# IPFS UPLOAD FUNCTIONALITY
+# ============================================================================
+
+def upload_to_ipfs(file_path, object_name=None):
+    """Upload a file to Filebase and return the IPFS CID"""
+    if object_name is None:
+        object_name = os.path.basename(file_path)
+    
+    # Initialize S3 client for Filebase
+    s3_client = boto3.client(
+        's3',
+        endpoint_url='https://s3.filebase.com',
+        aws_access_key_id=FILEBASE_ACCESS_KEY,
+        aws_secret_access_key=FILEBASE_SECRET_KEY,
+        region_name='us-east-1'
+    )
+    
+    try:
+        with open(file_path, 'rb') as f:
+            s3_client.put_object(Body=f, Bucket=FILEBASE_BUCKET_NAME, Key=object_name)
+        
+        # Get the object's metadata to find the CID
+        response = s3_client.head_object(
+            Bucket=FILEBASE_BUCKET_NAME,
+            Key=object_name
+        )
+        
+        # The IPFS CID is stored in the metadata
+        ipfs_cid = response['Metadata'].get('cid')
+        if not ipfs_cid:
+            ipfs_cid = response['Metadata'].get('x-amz-meta-cid')
+        
+        logger.info(f"✅ IPFS upload successful. CID: {ipfs_cid}")
+        return ipfs_cid
+        
+    except ClientError as e:
+        logger.error(f"❌ IPFS upload failed: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"❌ Unexpected IPFS upload error: {e}")
+        return None
 
 # ============================================================================
 # WEB APP ROUTES (Card Creation Interface)
@@ -208,6 +258,26 @@ def api_create_card():
             logger.error(f"💥 Watermarking error: {e}")
             return jsonify({'error': f'Failed to create watermark: {str(e)}'}), 500
         
+        # Upload images to IPFS
+        original_ipfs_cid = None
+        watermarked_ipfs_cid = None
+        
+        try:
+            # Save original image temporarily and upload to IPFS
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_original:
+                image.save(temp_original.name, format='PNG')
+                original_ipfs_cid = upload_to_ipfs(temp_original.name, f"{watermark_id}_original.png")
+                os.unlink(temp_original.name)
+            
+            # Save watermarked image temporarily and upload to IPFS
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_watermarked:
+                watermarked_image.save(temp_watermarked.name, format='PNG')
+                watermarked_ipfs_cid = upload_to_ipfs(temp_watermarked.name, f"{watermark_id}_watermarked.png")
+                os.unlink(temp_watermarked.name)
+                
+        except Exception as e:
+            logger.warning(f"⚠️ IPFS upload failed: {e}")
+        
         # Create database record
         card = TradingCard(
             watermark_id=watermark_id,
@@ -217,7 +287,10 @@ def api_create_card():
             rarity=data.get('rarity', 'Common'),
             creator_address=data.get('creator_address', ''),
             image_url=f"data:image/png;base64,{data['image']}",
-            watermarked_image_url=f"data:image/png;base64,{watermarked_base64}"
+            watermarked_image_url=f"data:image/png;base64,{watermarked_base64}",
+            metadata_uri=f"https://gateway.pinata.cloud/ipfs/{original_ipfs_cid}" if original_ipfs_cid else None,
+            ipfs_cid=original_ipfs_cid,
+            watermarked_ipfs_cid=watermarked_ipfs_cid
         )
         
         db.session.add(card)
@@ -715,7 +788,11 @@ def get_user_nfts(wallet_address):
                     'transactionHash': card.mint_transaction_hash,
                     'etherscanUrl': f'https://sepolia.etherscan.io/tx/{card.mint_transaction_hash}',
                     'nftContract': NFT_CONTRACT_ADDRESS,
-                    'mintedAt': card.minted_at.isoformat() if card.minted_at else None
+                    'mintedAt': card.minted_at.isoformat() if card.minted_at else None,
+                    'ipfs_cid': card.ipfs_cid,
+                    'watermarked_ipfs_cid': card.watermarked_ipfs_cid,
+                    'imageUrl': f'https://gateway.pinata.cloud/ipfs/{card.ipfs_cid}' if card.ipfs_cid else card.image_url,
+                    'watermarkedImageUrl': f'https://gateway.pinata.cloud/ipfs/{card.watermarked_ipfs_cid}' if card.watermarked_ipfs_cid else card.watermarked_image_url
                 })
         
         return jsonify({

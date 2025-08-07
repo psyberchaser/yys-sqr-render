@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Linking,
+  Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import YYSApiService from '../services/YYSApiService';
@@ -178,15 +179,34 @@ export default function WalletScreen({ navigation }) {
               <ScrollView style={styles.nftList}>
                 {userNFTs.map((nft, index) => (
                   <View key={index} style={styles.nftItem}>
-                    <Text style={styles.nftName}>{nft.cardName}</Text>
-                    <Text style={styles.nftTokenId}>Token ID: #{nft.tokenId}</Text>
-                    <Text style={styles.nftWatermark}>Card: {nft.watermarkId}</Text>
-                    <TouchableOpacity 
-                      style={styles.nftViewButton}
-                      onPress={() => Linking.openURL(nft.etherscanUrl)}
-                    >
-                      <Text style={styles.nftViewButtonText}>View on Etherscan</Text>
-                    </TouchableOpacity>
+                    {nft.imageUrl && (
+                      <Image 
+                        source={{ uri: nft.imageUrl }} 
+                        style={styles.nftImage}
+                        resizeMode="cover"
+                      />
+                    )}
+                    <View style={styles.nftDetails}>
+                      <Text style={styles.nftName}>{nft.cardName}</Text>
+                      <Text style={styles.nftTokenId}>Token ID: #{nft.tokenId}</Text>
+                      <Text style={styles.nftWatermark}>Card: {nft.watermarkId}</Text>
+                      <View style={styles.nftButtons}>
+                        <TouchableOpacity 
+                          style={styles.nftViewButton}
+                          onPress={() => Linking.openURL(nft.etherscanUrl)}
+                        >
+                          <Text style={styles.nftViewButtonText}>Etherscan</Text>
+                        </TouchableOpacity>
+                        {nft.imageUrl && (
+                          <TouchableOpacity 
+                            style={styles.nftImageButton}
+                            onPress={() => Linking.openURL(nft.imageUrl)}
+                          >
+                            <Text style={styles.nftImageButtonText}>View Image</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
                   </View>
                 ))}
               </ScrollView>
@@ -509,6 +529,16 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginBottom: 10,
+    flexDirection: 'row',
+  },
+  nftImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  nftDetails: {
+    flex: 1,
   },
   nftName: {
     fontSize: 16,
@@ -526,13 +556,26 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 8,
   },
+  nftButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   nftViewButton: {
     backgroundColor: '#2196F3',
     padding: 6,
     borderRadius: 4,
-    alignSelf: 'flex-start',
   },
   nftViewButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  nftImageButton: {
+    backgroundColor: '#4CAF50',
+    padding: 6,
+    borderRadius: 4,
+  },
+  nftImageButtonText: {
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',

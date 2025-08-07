@@ -7,6 +7,9 @@ psycopg2-binary>=2.9.7
 web3>=6.11.0
 eth-account>=0.9.0
 
+# IPFS/Filebase storage
+boto3>=1.28.0
+
 # Existing working requirements (copy from requirements.txt)
 flask>=2.3.0
 flask-cors>=4.0.0
