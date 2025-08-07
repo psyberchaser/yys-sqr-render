@@ -795,7 +795,8 @@ def get_user_nfts(wallet_address):
         
         nfts = []
         for card in owned_cards:
-            if card.is_minted and card.nft_token_id:
+            # Check if card is minted (has owner_address and nft_token_id)
+            if card.owner_address and card.nft_token_id:
                 # Use getattr to safely access IPFS fields that might not exist
                 ipfs_cid = getattr(card, 'ipfs_cid', None)
                 watermarked_ipfs_cid = getattr(card, 'watermarked_ipfs_cid', None)
