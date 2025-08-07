@@ -801,19 +801,38 @@ def get_user_nfts(wallet_address):
                 ipfs_cid = getattr(card, 'ipfs_cid', None)
                 watermarked_ipfs_cid = getattr(card, 'watermarked_ipfs_cid', None)
                 
+                # Ensure transaction hash has 0x prefix for Etherscan
+                tx_hash = card.mint_transaction_hash
+                if tx_hash and not tx_hash.startswith('0x'):
+                    tx_hash = f'0x{tx_hash}'
+                
+                # Determine best image URL - prioritize IPFS, fallback to stored image
+                image_url = None
+                if watermarked_ipfs_cid:
+                    image_url = f'https://gateway.pinata.cloud/ipfs/{watermarked_ipfs_cid}'
+                elif ipfs_cid:
+                    image_url = f'https://gateway.pinata.cloud/ipfs/{ipfs_cid}'
+                elif hasattr(card, 'watermarked_image') and card.watermarked_image:
+                    # Use base64 data URL for stored image
+                    image_url = f'data:image/png;base64,{card.watermarked_image}'
+                elif hasattr(card, 'image_data') and card.image_data:
+                    image_url = f'data:image/png;base64,{card.image_data}'
+                
                 nfts.append({
                     'tokenId': card.nft_token_id,
+                    'nft_token_id': card.nft_token_id,  # Both formats for compatibility
                     'watermarkId': card.watermark_id,
                     'cardName': card.card_name,
                     'description': card.description,
-                    'transactionHash': card.mint_transaction_hash,
-                    'etherscanUrl': f'https://sepolia.etherscan.io/tx/{card.mint_transaction_hash}',
+                    'transactionHash': tx_hash,
+                    'etherscanUrl': f'https://sepolia.etherscan.io/tx/{tx_hash}' if tx_hash else None,
                     'nftContract': NFT_CONTRACT_ADDRESS,
                     'mintedAt': card.minted_at.isoformat() if card.minted_at else None,
                     'ipfs_cid': ipfs_cid,
                     'watermarked_ipfs_cid': watermarked_ipfs_cid,
-                    'imageUrl': f'https://gateway.pinata.cloud/ipfs/{ipfs_cid}' if ipfs_cid else card.image_url,
-                    'watermarkedImageUrl': f'https://gateway.pinata.cloud/ipfs/{watermarked_ipfs_cid}' if watermarked_ipfs_cid else card.watermarked_image_url
+                    'imageUrl': image_url,
+                    'watermarkedImageUrl': image_url,  # Same as imageUrl for now
+                    'owner_address': card.owner_address
                 })
         
         return jsonify({

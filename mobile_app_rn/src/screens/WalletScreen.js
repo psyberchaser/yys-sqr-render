@@ -188,21 +188,34 @@ export default function WalletScreen({ navigation }) {
                     )}
                     <View style={styles.nftDetails}>
                       <Text style={styles.nftName}>{nft.cardName}</Text>
-                      <Text style={styles.nftTokenId}>Token ID: #{nft.tokenId}</Text>
+                      <Text style={styles.nftTokenId}>Token ID: #{nft.tokenId || nft.nft_token_id}</Text>
                       <Text style={styles.nftWatermark}>Card: {nft.watermarkId}</Text>
+                      {nft.ipfs_cid && (
+                        <Text style={styles.nftIpfs}>IPFS: {nft.ipfs_cid.substring(0, 12)}...</Text>
+                      )}
                       <View style={styles.nftButtons}>
-                        <TouchableOpacity 
-                          style={styles.nftViewButton}
-                          onPress={() => Linking.openURL(nft.etherscanUrl)}
-                        >
-                          <Text style={styles.nftViewButtonText}>Etherscan</Text>
-                        </TouchableOpacity>
+                        {nft.etherscanUrl && (
+                          <TouchableOpacity 
+                            style={styles.nftViewButton}
+                            onPress={() => Linking.openURL(nft.etherscanUrl)}
+                          >
+                            <Text style={styles.nftViewButtonText}>📊 Etherscan</Text>
+                          </TouchableOpacity>
+                        )}
                         {nft.imageUrl && (
                           <TouchableOpacity 
                             style={styles.nftImageButton}
                             onPress={() => Linking.openURL(nft.imageUrl)}
                           >
-                            <Text style={styles.nftImageButtonText}>View Image</Text>
+                            <Text style={styles.nftImageButtonText}>🖼️ View Image</Text>
+                          </TouchableOpacity>
+                        )}
+                        {nft.ipfs_cid && (
+                          <TouchableOpacity 
+                            style={styles.nftIpfsButton}
+                            onPress={() => Linking.openURL(`https://gateway.pinata.cloud/ipfs/${nft.ipfs_cid}`)}
+                          >
+                            <Text style={styles.nftIpfsButtonText}>🌐 IPFS</Text>
                           </TouchableOpacity>
                         )}
                       </View>
@@ -554,11 +567,18 @@ const styles = StyleSheet.create({
   nftWatermark: {
     fontSize: 12,
     color: '#666',
+    marginBottom: 2,
+  },
+  nftIpfs: {
+    fontSize: 11,
+    color: '#9C27B0',
     marginBottom: 8,
+    fontFamily: 'monospace',
   },
   nftButtons: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
+    flexWrap: 'wrap',
   },
   nftViewButton: {
     backgroundColor: '#2196F3',
@@ -576,6 +596,16 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   nftImageButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  nftIpfsButton: {
+    backgroundColor: '#9C27B0',
+    padding: 6,
+    borderRadius: 4,
+  },
+  nftIpfsButtonText: {
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',
