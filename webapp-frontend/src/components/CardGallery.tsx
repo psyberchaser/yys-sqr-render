@@ -71,77 +71,114 @@ export function CardGallery({ onCardSelect }: CardGalleryProps) {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {cards.map((card) => (
-              <Card key={card.watermark_id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="aspect-square relative group overflow-hidden rounded-t-lg">
+              <div key={card.watermark_id} className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
+                {/* Image Section - Full Width */}
+                <div className="aspect-square relative group overflow-hidden">
                   <img
                     src={card.image_url}
                     alt={card.card_name}
-                    className="w-full h-full object-cover cursor-pointer transition-all duration-200 group-hover:scale-105"
+                    className="w-full h-full object-cover cursor-pointer transition-all duration-300 group-hover:scale-110"
                     onClick={(e) => {
                       e.stopPropagation();
-                      window.open(card.watermarked_image_url, '_blank');
+                      const newWindow = window.open('', '_blank');
+                      if (newWindow) {
+                        newWindow.document.write(`
+                          <html>
+                            <head>
+                              <title>${card.card_name} - Watermarked</title>
+                              <style>
+                                body { margin: 0; padding: 20px; background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+                                img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+                              </style>
+                            </head>
+                            <body>
+                              <img src="${card.watermarked_image_url}" alt="${card.card_name} - Watermarked" />
+                            </body>
+                          </html>
+                        `);
+                        newWindow.document.close();
+                      }
                     }}
                     title="Click to view watermarked image"
                   />
-                  <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-mono pointer-events-none">
+                  
+                  {/* Watermark ID Badge */}
+                  <div className="absolute top-3 right-3 bg-black/80 backdrop-blur-sm text-white px-2 py-1 rounded-md text-xs font-mono pointer-events-none">
                     {card.watermark_id}
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none flex items-center justify-center">
-                    <div className="bg-white/90 rounded-full p-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-200">
-                      <Eye className="w-6 h-6 text-gray-800" />
+                  
+                  {/* Hover Overlay */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 pointer-events-none flex items-center justify-center">
+                    <div className="bg-white/95 backdrop-blur-sm rounded-full p-3 transform scale-0 group-hover:scale-100 transition-transform duration-300 shadow-lg">
+                      <Eye className="w-5 h-5 text-gray-700" />
                     </div>
                   </div>
+                  
+                  {/* NFT Badge */}
+                  {card.owner_address && (
+                    <div className="absolute top-3 left-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white px-2 py-1 rounded-md text-xs font-semibold flex items-center gap-1">
+                      <Trophy className="w-3 h-3" />
+                      NFT
+                    </div>
+                  )}
                 </div>
-                <CardHeader className="pb-2">
-                  <CardTitle 
-                    className="text-lg cursor-pointer hover:text-primary transition-colors"
+
+                {/* Content Section */}
+                <div className="p-4">
+                  {/* Title */}
+                  <h3 
+                    className="font-bold text-lg text-gray-900 cursor-pointer hover:text-blue-600 transition-colors duration-200 mb-2 line-clamp-1"
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log('Card title clicked:', card.watermark_id);
                       onCardSelect?.(card.watermark_id);
                     }}
                     title="Click to view card details"
                   >
                     {card.card_name}
-                  </CardTitle>
-                  <CardDescription>
-                    {card.series && <span className="block">{card.series}</span>}
-                    <span className="inline-flex items-center gap-1">
-                      <span className={`w-2 h-2 rounded-full ${
+                  </h3>
+                  
+                  {/* Series and Rarity */}
+                  <div className="flex items-center justify-between mb-3">
+                    {card.series && (
+                      <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
+                        {card.series}
+                      </span>
+                    )}
+                    <div className="flex items-center gap-1">
+                      <div className={`w-2 h-2 rounded-full ${
                         card.rarity === 'Legendary' ? 'bg-yellow-500' :
+                        card.rarity === 'Mythic' ? 'bg-purple-600' :
                         card.rarity === 'Epic' ? 'bg-purple-500' :
                         card.rarity === 'Rare' ? 'bg-blue-500' :
                         card.rarity === 'Uncommon' ? 'bg-green-500' :
-                        'bg-gray-500'
-                      }`}></span>
-                      {card.rarity}
-                    </span>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="flex justify-between items-center text-sm text-muted-foreground mb-2">
-                    <span className="flex items-center gap-1">
-                      <Eye className="w-3 h-3" />
-                      {card.scan_count} scans
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {new Date(card.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  {card.description && (
-                    <p className="text-sm mt-2 line-clamp-2 text-muted-foreground">{card.description}</p>
-                  )}
-                  {card.owner_address && (
-                    <div className="mt-2 flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-                      <Trophy className="w-3 h-3" />
-                      NFT Claimed
+                        'bg-gray-400'
+                      }`}></div>
+                      <span className="text-sm font-medium text-gray-700">{card.rarity}</span>
                     </div>
+                  </div>
+                  
+                  {/* Description */}
+                  {card.description && (
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2 leading-relaxed">
+                      {card.description}
+                    </p>
                   )}
-                </CardContent>
-              </Card>
+                  
+                  {/* Stats */}
+                  <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
+                    <div className="flex items-center gap-1">
+                      <Eye className="w-3 h-3" />
+                      <span>{card.scan_count} scans</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      <span>{new Date(card.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
 

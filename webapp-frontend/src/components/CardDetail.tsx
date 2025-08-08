@@ -95,13 +95,51 @@ export function CardDetail({ watermarkId, onBack }: CardDetailProps) {
                 src={card.image_url}
                 alt={card.card_name}
                 className="w-full rounded-lg border hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => window.open(card.image_url, '_blank')}
+                onClick={() => {
+                  const newWindow = window.open('', '_blank');
+                  if (newWindow) {
+                    newWindow.document.write(`
+                      <html>
+                        <head>
+                          <title>${card.card_name} - Original</title>
+                          <style>
+                            body { margin: 0; padding: 20px; background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+                            img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+                          </style>
+                        </head>
+                        <body>
+                          <img src="${card.image_url}" alt="${card.card_name} - Original" />
+                        </body>
+                      </html>
+                    `);
+                    newWindow.document.close();
+                  }
+                }}
               />
               <Button
                 variant="outline"
                 size="sm"
                 className="w-full mt-3 flex items-center gap-2"
-                onClick={() => window.open(card.image_url, '_blank')}
+                onClick={() => {
+                  const newWindow = window.open('', '_blank');
+                  if (newWindow) {
+                    newWindow.document.write(`
+                      <html>
+                        <head>
+                          <title>${card.card_name} - Original</title>
+                          <style>
+                            body { margin: 0; padding: 20px; background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+                            img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+                          </style>
+                        </head>
+                        <body>
+                          <img src="${card.image_url}" alt="${card.card_name} - Original" />
+                        </body>
+                      </html>
+                    `);
+                    newWindow.document.close();
+                  }
+                }}
               >
                 <ExternalLink className="w-4 h-4" />
                 Open Full Size
@@ -121,13 +159,51 @@ export function CardDetail({ watermarkId, onBack }: CardDetailProps) {
                 src={card.watermarked_image_url}
                 alt={`${card.card_name} (Watermarked)`}
                 className="w-full rounded-lg border hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => window.open(card.watermarked_image_url, '_blank')}
+                onClick={() => {
+                  const newWindow = window.open('', '_blank');
+                  if (newWindow) {
+                    newWindow.document.write(`
+                      <html>
+                        <head>
+                          <title>${card.card_name} - Watermarked</title>
+                          <style>
+                            body { margin: 0; padding: 20px; background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+                            img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+                          </style>
+                        </head>
+                        <body>
+                          <img src="${card.watermarked_image_url}" alt="${card.card_name} - Watermarked" />
+                        </body>
+                      </html>
+                    `);
+                    newWindow.document.close();
+                  }
+                }}
               />
               <Button
                 variant="outline"
                 size="sm"
                 className="w-full mt-3 flex items-center gap-2"
-                onClick={() => window.open(card.watermarked_image_url, '_blank')}
+                onClick={() => {
+                  const newWindow = window.open('', '_blank');
+                  if (newWindow) {
+                    newWindow.document.write(`
+                      <html>
+                        <head>
+                          <title>${card.card_name} - Watermarked</title>
+                          <style>
+                            body { margin: 0; padding: 20px; background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+                            img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+                          </style>
+                        </head>
+                        <body>
+                          <img src="${card.watermarked_image_url}" alt="${card.card_name} - Watermarked" />
+                        </body>
+                      </html>
+                    `);
+                    newWindow.document.close();
+                  }
+                }}
               >
                 <ExternalLink className="w-4 h-4" />
                 Open Full Size
