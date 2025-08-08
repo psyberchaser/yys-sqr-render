@@ -232,6 +232,15 @@ def api_get_cards():
         'current_page': page
     })
 
+@app.route('/api/cards/<watermark_id>', methods=['GET'])
+def api_get_card(watermark_id):
+    """Get individual card by watermark ID"""
+    card = TradingCard.query.get(watermark_id)
+    if not card:
+        return jsonify({'error': 'Card not found'}), 404
+    
+    return jsonify(card.to_dict())
+
 @app.route('/api/cards', methods=['POST'])
 def api_create_card():
     """Create a new trading card"""
