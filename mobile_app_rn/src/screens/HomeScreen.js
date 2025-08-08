@@ -66,9 +66,7 @@ export default function HomeScreen({ navigation }) {
     navigation.navigate('Scan');
   };
 
-  const navigateToEmbed = () => {
-    navigation.navigate('Embed');
-  };
+
 
   const getStatusColor = () => {
     switch (serverStatus) {
@@ -162,19 +160,6 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         <View style={styles.buttonGrid}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.embedButton]}
-            onPress={navigateToEmbed}
-          >
-            <View style={styles.buttonContent}>
-              <Text style={styles.buttonIcon}>🔒</Text>
-              <Text style={styles.buttonText}>Embed</Text>
-              <Text style={styles.buttonSubtext}>
-                Hide messages
-              </Text>
-            </View>
-          </TouchableOpacity>
-
           <TouchableOpacity
             style={[styles.actionButton, styles.walletButton]}
             onPress={() => navigation.navigate('Wallet')}
@@ -348,10 +333,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 4,
     borderTopColor: '#FF9800',
   },
-  embedButton: {
-    borderTopWidth: 4,
-    borderTopColor: '#2196F3',
-  },
+
   walletButton: {
     borderTopWidth: 4,
     borderTopColor: '#9C27B0',
