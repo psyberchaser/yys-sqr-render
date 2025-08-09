@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { CardContainer, CardBody, CardItem } from './ui/3d-card';
-import { Grid3X3, Eye, Calendar, Loader2 } from 'lucide-react';
+import { Eye, Calendar, Loader2 } from 'lucide-react';
 import { apiService, Card as CardType } from '../services/api';
 
 interface CardGalleryProps {
@@ -46,10 +46,7 @@ export function CardGallery({ onCardSelect }: CardGalleryProps) {
     return (
       <div className="space-y-6">
         <div className="text-center">
-          <h2 className="text-3xl font-bold mb-2 flex items-center justify-center gap-3">
-            <Grid3X3 className="w-8 h-8" />
-            Card Gallery
-          </h2>
+          <h2 className="text-3xl font-bold mb-2 text-center">Card Gallery</h2>
           <p className="text-muted-foreground">Loading cards...</p>
         </div>
 
@@ -75,10 +72,7 @@ export function CardGallery({ onCardSelect }: CardGalleryProps) {
     return (
       <div className="space-y-6">
         <div className="text-center">
-          <h2 className="text-3xl font-bold mb-2 flex items-center justify-center gap-3">
-            <Grid3X3 className="w-8 h-8" />
-            Card Gallery
-          </h2>
+          <h2 className="text-3xl font-bold mb-2 text-center">Card Gallery</h2>
         </div>
 
         <div className="text-center py-12">
@@ -96,10 +90,7 @@ export function CardGallery({ onCardSelect }: CardGalleryProps) {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-3xl font-bold mb-2 flex items-center justify-center gap-3">
-          <Grid3X3 className="w-8 h-8" />
-          Card Gallery
-        </h2>
+        <h2 className="text-3xl font-bold mb-2 text-center">Card Gallery</h2>
         <p className="text-muted-foreground">
           Explore all created cards ({total} total)
         </p>
@@ -107,7 +98,7 @@ export function CardGallery({ onCardSelect }: CardGalleryProps) {
 
       {cards.length === 0 ? (
         <div className="text-center py-12">
-          <Grid3X3 className="w-16 h-16 mx-auto mb-4 opacity-50" />
+          <div className="w-16 h-16 mx-auto mb-4 opacity-50" />
           <h3 className="text-xl font-semibold mb-2">No cards yet</h3>
           <p className="text-muted-foreground">Be the first to create a trading card!</p>
         </div>

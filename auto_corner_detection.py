@@ -21,34 +21,56 @@ class AutoCornerDetector:
         if image is None:
             return {"error": "Could not load image"}
         
+        # Preprocessing variants to improve edge and contrast
+        variants = []
+        try:
+            variants.append(("original", image))
+            # CLAHE on luminance channel
+            lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+            l, a, b = cv2.split(lab)
+            clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+            cl = clahe.apply(l)
+            limg = cv2.merge((cl, a, b))
+            clahe_bgr = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+            variants.append(("clahe", clahe_bgr))
+            # Unsharp mask for edge sharpening
+            gaussian = cv2.GaussianBlur(image, (0, 0), 2.0)
+            unsharp = cv2.addWeighted(image, 1.5, gaussian, -0.5, 0)
+            variants.append(("unsharp", unsharp))
+        except Exception:
+            variants = [("original", image)]
+
         # Try multiple detection methods
         methods = [
             self.detect_document_corners,
             self.detect_contour_corners,
             self.detect_harris_corners,
-            self.detect_edge_corners
+            self.detect_edge_corners,
         ]
         
-        for i, method in enumerate(methods):
-            print(f"  Trying method {i+1}: {method.__name__}")
-            corners = method(image)
-            
-            if corners is not None and len(corners) == 4:
-                print(f"  ✅ Found 4 corners with {method.__name__}")
+        for variant_name, variant_image in variants:
+            print(f"  ▶️ Variant: {variant_name}")
+            for i, method in enumerate(methods):
+                print(f"    Trying method {i+1}: {method.__name__}")
+                corners = method(variant_image)
                 
-                # Apply perspective correction
-                corrected = self.correct_perspective(image, corners)
-                
-                # Try to decode watermark
-                result = self.decode_watermark(corrected)
-                if result['success']:
-                    result['method'] = method.__name__
-                    result['corners'] = corners.tolist()
-                    return result
+                if corners is not None and len(corners) == 4:
+                    print(f"    ✅ Found 4 corners with {method.__name__}")
+                    
+                    # Apply perspective correction
+                    corrected = self.correct_perspective(variant_image, corners)
+                    
+                    # Try to decode watermark (multi-scale)
+                    for size in (1024, 1280, 768):
+                        corrected_resized = cv2.resize(corrected, (size, size), interpolation=cv2.INTER_CUBIC)
+                        result = self.decode_watermark(corrected_resized)
+                        if result['success']:
+                            result['method'] = f"{variant_name}:{method.__name__}:{size}"
+                            result['corners'] = corners.tolist()
+                            return result
+                    print("    ❌ Corners found but no watermark decoded on this variant")
                 else:
-                    print(f"  ❌ Corners found but no watermark decoded")
-            else:
-                print(f"  ❌ Could not find 4 corners")
+                    print(f"    ❌ Could not find 4 corners")
         
         return {"error": "Could not detect corners or decode watermark"}
     

@@ -41,7 +41,7 @@ function App() {
             onClick={() => setCurrentView('home')}
             className="inline-flex items-center justify-center mb-2 cursor-pointer"
           >
-            <img src="/yotonyostudios.png" alt="Yoto Nyo Studios" className="h-12 w-auto" />
+            <img src="/yotonyostudios.png" alt="Yoto Nyo Studios" className="h-8 md:h-10 w-auto" />
           </button>
           <p className="text-xl text-muted-foreground">Watermark Scanner & NFT Platform</p>
         </div>
