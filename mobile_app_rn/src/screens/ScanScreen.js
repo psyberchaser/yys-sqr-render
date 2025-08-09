@@ -41,8 +41,21 @@ export default function ScanScreen({ navigation }) {
           skipProcessing: false,
           exif: false,
         });
-        
-        await processImage(photo);
+        // Center-crop to reduce background noise (~80% of min dimension)
+        const minDim = Math.min(photo.width, photo.height);
+        const cropSize = Math.floor(minDim * 0.8);
+        const cropLeft = Math.floor((photo.width - cropSize) / 2);
+        const cropTop = Math.floor((photo.height - cropSize) / 2);
+
+        const croppedImage = await ImageManipulator.manipulateAsync(
+          photo.uri,
+          [
+            { crop: { originX: cropLeft, originY: cropTop, width: cropSize, height: cropSize } },
+          ],
+          { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+        );
+
+        await processImage(croppedImage);
       } catch (error) {
         console.error('Error taking picture:', error);
         Alert.alert('Error', 'Failed to take picture');
@@ -108,10 +121,20 @@ export default function ScanScreen({ navigation }) {
       
       // If we get here, all sizes failed
       console.log('All image sizes failed');
-      Alert.alert(
-        'No Watermark Found', 
-        'Could not detect watermark with automatic scanning. Try:\n• Better lighting\n• Clearer photo\n• Use Manual Scan instead'
-      );
+      if (autoScanEnabled) {
+        // Auto-retry quickly when auto-scan is on
+        console.log('Auto-scan enabled; scheduling a quick retry');
+        setTimeout(() => {
+          if (!isProcessing) {
+            takePicture();
+          }
+        }, 1500);
+      } else {
+        Alert.alert(
+          'No Watermark Found', 
+          'Could not detect watermark with automatic scanning. Try:\n• Better lighting\n• Clearer photo\n• Use Manual Scan instead'
+        );
+      }
 
     } catch (error) {
       console.error('Error processing image:', error);
