@@ -5,7 +5,7 @@ import { LoginForm } from './components/login-form';
 import { CreateCard } from './components/CreateCard';
 import { CardGallery } from './components/CardGallery';
 import { CardDetail } from './components/CardDetail';
-import { Home, Palette, Grid3X3, Camera, Shield, Download, Zap } from 'lucide-react';
+import { Camera, Shield, Download } from 'lucide-react';
 
 type View = 'home' | 'create' | 'gallery' | 'card-detail';
 
@@ -22,7 +22,7 @@ function App() {
   const renderView = () => {
     switch (currentView) {
       case 'create':
-        return <CreateCard onCardCreated={() => setCurrentView('gallery')} />;
+        return <CreateCard onCardSelect={handleCardSelect} onViewGallery={() => setCurrentView('gallery')} />;
       case 'gallery':
         return <CardGallery onCardSelect={handleCardSelect} />;
       case 'card-detail':
@@ -39,9 +39,9 @@ function App() {
         <div className="text-center mb-8">
           <button 
             onClick={() => setCurrentView('home')}
-            className="text-4xl font-bold text-foreground mb-2 hover:text-primary cursor-pointer"
+            className="inline-flex items-center justify-center mb-2 cursor-pointer"
           >
-            YYS-SQR
+            <img src="/yotonyostudios.png" alt="Yoto Nyo Studios" className="h-12 w-auto" />
           </button>
           <p className="text-xl text-muted-foreground">Watermark Scanner & NFT Platform</p>
         </div>
@@ -51,25 +51,19 @@ function App() {
           <Button 
             variant={currentView === 'home' ? 'default' : 'outline'}
             onClick={() => setCurrentView('home')}
-            className="flex items-center gap-2"
           >
-            <Home className="w-4 h-4" />
             Home
           </Button>
           <Button 
             variant={currentView === 'create' ? 'default' : 'outline'}
             onClick={() => setCurrentView('create')}
-            className="flex items-center gap-2"
           >
-            <Palette className="w-4 h-4" />
             Create Card
           </Button>
           <Button 
             variant={currentView === 'gallery' ? 'default' : 'outline'}
             onClick={() => setCurrentView('gallery')}
-            className="flex items-center gap-2"
           >
-            <Grid3X3 className="w-4 h-4" />
             Gallery
           </Button>
         </div>
@@ -83,7 +77,8 @@ function App() {
 
 function HomeView({ onNavigate }: { onNavigate: (view: View) => void }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+    <div className="relative">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
           {/* Left Column - Login */}
           <div className="space-y-6">
             <Card>
@@ -99,12 +94,7 @@ function HomeView({ onNavigate }: { onNavigate: (view: View) => void }) {
               <CardContent>
                 <LoginForm />
                 <div className="mt-4 space-y-2">
-                  <Button 
-                    className="w-full flex items-center gap-2" 
-                    variant="outline"
-                    onClick={() => onNavigate('create')}
-                  >
-                    <Zap className="w-4 h-4" />
+                  <Button className="w-full" variant="outline" onClick={() => onNavigate('create')}>
                     Quick Create Card
                   </Button>
                   <p className="text-sm text-muted-foreground text-center">
@@ -138,7 +128,6 @@ function HomeView({ onNavigate }: { onNavigate: (view: View) => void }) {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Palette className="w-5 h-5" />
                   Create Cards
                 </CardTitle>
                 <CardDescription>
@@ -146,12 +135,7 @@ function HomeView({ onNavigate }: { onNavigate: (view: View) => void }) {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button 
-                  className="w-full flex items-center gap-2" 
-                  variant="outline"
-                  onClick={() => onNavigate('create')}
-                >
-                  <Palette className="w-4 h-4" />
+                <Button className="w-full" variant="outline" onClick={() => onNavigate('create')}>
                   Create New Card
                 </Button>
               </CardContent>
@@ -160,7 +144,6 @@ function HomeView({ onNavigate }: { onNavigate: (view: View) => void }) {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Grid3X3 className="w-5 h-5" />
                   Browse Gallery
                 </CardTitle>
                 <CardDescription>
@@ -168,17 +151,13 @@ function HomeView({ onNavigate }: { onNavigate: (view: View) => void }) {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button 
-                  className="w-full flex items-center gap-2" 
-                  variant="secondary"
-                  onClick={() => onNavigate('gallery')}
-                >
-                  <Grid3X3 className="w-4 h-4" />
+                <Button className="w-full" variant="secondary" onClick={() => onNavigate('gallery')}>
                   View Gallery
                 </Button>
               </CardContent>
             </Card>
           </div>
+      </div>
     </div>
   );
 }

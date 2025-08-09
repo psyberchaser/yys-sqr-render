@@ -41,6 +41,21 @@ export interface GetCardsResponse {
 }
 
 class ApiService {
+  private cache = new Map<string, { data: any; timestamp: number }>();
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+  private getCachedData(key: string) {
+    const cached = this.cache.get(key);
+    if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+      return cached.data;
+    }
+    return null;
+  }
+
+  private setCachedData(key: string, data: any) {
+    this.cache.set(key, { data, timestamp: Date.now() });
+  }
+
   async createCard(data: CreateCardData): Promise<CreateCardResponse> {
     const response = await fetch(`${API_BASE_URL}/api/cards`, {
       method: 'POST',
@@ -58,13 +73,39 @@ class ApiService {
   }
 
   async getCards(page: number = 1, perPage: number = 20): Promise<GetCardsResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/cards?page=${page}&per_page=${perPage}`);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    const cacheKey = `cards-${page}-${perPage}`;
+    const cached = this.getCachedData(cacheKey);
+    if (cached) {
+      return cached;
     }
 
-    return response.json();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/cards?page=${page}&per_page=${perPage}`, {
+        signal: controller.signal,
+        headers: {
+          'Cache-Control': 'max-age=300', // 5 minutes browser cache
+        }
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      this.setCachedData(cacheKey, data);
+      return data;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Request timed out - server may be slow');
+      }
+      throw error;
+    }
   }
 
   async getCard(watermarkId: string): Promise<Card> {

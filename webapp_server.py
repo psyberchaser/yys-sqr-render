@@ -5,7 +5,7 @@ import base64
 import json
 import logging
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template, redirect, url_for, flash
+from flask import Flask, request, jsonify, render_template, redirect, url_for, flash, send_from_directory
 from flask_cors import CORS
 from flask_migrate import Migrate
 from PIL import Image
@@ -56,7 +56,11 @@ try:
 except Exception as e:
     print(f"❌ TrustMark failed: {e}")
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    static_folder='webapp-frontend/build',  # Serve React build
+    static_url_path=''  # Expose build at root paths (e.g., /static/...)
+)
 CORS(app)
 
 # Database configuration
@@ -153,35 +157,47 @@ def upload_to_ipfs(file_path, object_name=None):
 
 @app.route('/')
 def index():
-    """Main web app dashboard"""
-    total_cards = TradingCard.query.count()
-    minted_cards = TradingCard.query.filter(TradingCard.owner_address.isnot(None)).count()
-    recent_cards = TradingCard.query.order_by(TradingCard.created_at.desc()).limit(5).all()
-    
-    return render_template('index.html', 
-                         total_cards=total_cards,
-                         minted_cards=minted_cards,
-                         recent_cards=recent_cards)
+    """Serve React app index"""
+    try:
+        return send_from_directory(app.static_folder, 'index.html')
+    except Exception:
+        # Fallback to legacy template if React build not present
+        total_cards = TradingCard.query.count()
+        minted_cards = TradingCard.query.filter(TradingCard.owner_address.isnot(None)).count()
+        recent_cards = TradingCard.query.order_by(TradingCard.created_at.desc()).limit(5).all()
+        return render_template('index.html', 
+                             total_cards=total_cards,
+                             minted_cards=minted_cards,
+                             recent_cards=recent_cards)
 
 @app.route('/create')
 def create_card():
-    """Card creation form"""
-    return render_template('create_card.html')
+    """Serve React app for create route"""
+    try:
+        return send_from_directory(app.static_folder, 'index.html')
+    except Exception:
+        return render_template('create_card.html')
 
 @app.route('/cards')
 def list_cards():
-    """List all cards"""
-    page = request.args.get('page', 1, type=int)
-    cards = TradingCard.query.order_by(TradingCard.created_at.desc()).paginate(
-        page=page, per_page=20, error_out=False)
-    return render_template('cards.html', cards=cards)
+    """Serve React app for gallery route"""
+    try:
+        return send_from_directory(app.static_folder, 'index.html')
+    except Exception:
+        page = request.args.get('page', 1, type=int)
+        cards = TradingCard.query.order_by(TradingCard.created_at.desc()).paginate(
+            page=page, per_page=20, error_out=False)
+        return render_template('cards.html', cards=cards)
 
 @app.route('/card/<watermark_id>')
 def view_card(watermark_id):
-    """View individual card details"""
-    card = TradingCard.query.get_or_404(watermark_id)
-    scans = ScanHistory.query.filter_by(watermark_id=watermark_id).order_by(ScanHistory.scanned_at.desc()).all()
-    return render_template('card_detail.html', card=card, scans=scans)
+    """Serve React app for card detail route"""
+    try:
+        return send_from_directory(app.static_folder, 'index.html')
+    except Exception:
+        card = TradingCard.query.get_or_404(watermark_id)
+        scans = ScanHistory.query.filter_by(watermark_id=watermark_id).order_by(ScanHistory.scanned_at.desc()).all()
+        return render_template('card_detail.html', card=card, scans=scans)
 
 # ============================================================================
 # API ROUTES (Enhanced for Mobile App + Web App)
@@ -1028,6 +1044,24 @@ def visualize_detection():
         'error': 'Visualization not implemented yet',
         'details': 'Use regular scan endpoints instead'
     }), 501
+
+# ----------------------------------------------------------------------------
+# Catch-all route for React Router / client-side routes
+# ----------------------------------------------------------------------------
+@app.route('/<path:path>')
+def serve_react_app(path):
+    # Do not intercept API routes
+    if path.startswith('api'):
+        return jsonify({'error': 'Not found'}), 404
+    try:
+        # Serve the requested asset if it exists in build
+        full_path = os.path.join(app.static_folder, path)
+        if os.path.exists(full_path):
+            return send_from_directory(app.static_folder, path)
+        # Otherwise, serve index.html for SPA routing
+        return send_from_directory(app.static_folder, 'index.html')
+    except Exception:
+        return jsonify({'error': 'Frontend not built'}), 404
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

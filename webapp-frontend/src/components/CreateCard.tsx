@@ -3,15 +3,18 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Palette, Upload, Sparkles, Eye, RotateCcw, CheckCircle, Loader2, Copy } from 'lucide-react';
+import { FileUpload } from './ui/file-upload';
+import { StatefulButton } from './ui/stateful-button';
+import { Upload, Sparkles, Eye, RotateCcw, CheckCircle, Loader2, Copy } from 'lucide-react';
 import { apiService, CreateCardData } from '../services/api';
 import { Confetti } from './Confetti';
 
 interface CreateCardProps {
-  onCardCreated?: (card: any) => void;
+  onCardSelect?: (watermarkId: string) => void;
+  onViewGallery?: () => void;
 }
 
-export function CreateCard({ onCardCreated }: CreateCardProps) {
+export function CreateCard({ onCardSelect, onViewGallery }: CreateCardProps) {
   const [formData, setFormData] = useState({
     card_name: '',
     description: '',
@@ -28,8 +31,8 @@ export function CreateCard({ onCardCreated }: CreateCardProps) {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleFileChange = (files: File[]) => {
+    const file = files[0];
     if (file) {
       setSelectedFile(file);
       const url = URL.createObjectURL(file);
@@ -37,45 +40,36 @@ export function CreateCard({ onCardCreated }: CreateCardProps) {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!selectedFile) {
       alert('Please select an image file');
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const base64Image = await apiService.fileToBase64(selectedFile);
-      
-      const createData: CreateCardData = {
-        ...formData,
-        image: base64Image,
-      };
+    const base64Image = await apiService.fileToBase64(selectedFile);
+    
+    const createData: CreateCardData = {
+      ...formData,
+      image: base64Image,
+    };
 
-      const response = await apiService.createCard(createData);
+    const response = await apiService.createCard(createData);
+    
+    if (response.success) {
+      setResult(response);
       
-      if (response.success) {
-        setResult(response);
-        onCardCreated?.(response.card);
-        
-        // Reset form
-        setFormData({
-          card_name: '',
-          description: '',
-          series: '',
-          rarity: 'Common',
-          creator_address: '',
-        });
-        setSelectedFile(null);
-        setPreviewUrl('');
-      } else {
-        alert('Error creating card: ' + response.error);
-      }
-    } catch (error) {
-      alert('Error creating card: ' + (error as Error).message);
-    } finally {
-      setIsLoading(false);
+      // Reset form
+      setFormData({
+        card_name: '',
+        description: '',
+        series: '',
+        rarity: 'Common',
+        creator_address: '',
+      });
+      setSelectedFile(null);
+      setPreviewUrl('');
+    } else {
+      throw new Error(response.error || 'Failed to create card');
     }
   };
 
@@ -107,62 +101,77 @@ export function CreateCard({ onCardCreated }: CreateCardProps) {
               </Button>
             </div>
             <p className="text-sm text-muted-foreground mt-3">
-              This ID is now embedded invisibly in your card image!
+              This card now contains the embedded data and can be minted.
             </p>
           </div>
         </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h6 className="font-semibold mb-3 flex items-center gap-2">
-                  <Eye className="w-4 h-4" />
-                  Original Image
-                </h6>
-                <img 
-                  src={result.card.image_url} 
-                  alt="Original" 
-                  className="w-full rounded-lg border hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => window.open(result.card.image_url, '_blank')}
-                />
-              </div>
-              <div>
-                <h6 className="font-semibold mb-3 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  Watermarked Image
-                </h6>
+        {/* Card Preview */}
+        <div className="max-w-md mx-auto">
+          <Card>
+            <CardContent className="p-0">
+              <div className="aspect-square relative overflow-hidden rounded-t-lg">
                 <img 
                   src={`data:image/png;base64,${result.watermarked_image}`}
-                  alt="Watermarked" 
-                  className="w-full rounded-lg border hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => window.open(`data:image/png;base64,${result.watermarked_image}`, '_blank')}
+                  alt="Created Card" 
+                  className="w-full h-full object-cover"
                 />
-              </div>
-            </div>
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-              <div className="flex items-start gap-3">
-                <Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
-                <div>
-                  <h6 className="font-semibold text-blue-800 mb-1">Watermark Embedded!</h6>
-                  <p className="text-sm text-blue-700">
-                    This ID has been invisibly embedded in the image. Users can scan the physical card to claim the digital twin!
-                  </p>
+                <div className="absolute top-3 right-3 bg-black/80 backdrop-blur-sm text-white px-2 py-1 rounded-md text-xs font-mono">
+                  {result.card.watermark_id}
                 </div>
               </div>
-            </div>
-            <div className="mt-6 flex gap-3">
-              <Button onClick={() => setResult(null)} className="flex items-center gap-2">
-                <RotateCcw className="w-4 h-4" />
-                Create Another Card
-              </Button>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Eye className="w-4 h-4" />
-                View Card Details
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="p-4">
+                <h3 className="font-bold text-lg text-gray-900 mb-2">
+                  {result.card.card_name}
+                </h3>
+                <div className="flex items-center gap-3 mb-3">
+                  {result.card.series && (
+                    <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
+                      {result.card.series}
+                    </span>
+                  )}
+                  <div className="flex items-center gap-1">
+                    <div className={`w-2 h-2 rounded-full ${result.card.rarity === 'Legendary' ? 'bg-yellow-500' :
+                      result.card.rarity === 'Mythic' ? 'bg-purple-600' :
+                        result.card.rarity === 'Epic' ? 'bg-purple-500' :
+                          result.card.rarity === 'Rare' ? 'bg-blue-500' :
+                            result.card.rarity === 'Uncommon' ? 'bg-green-500' :
+                              'bg-gray-400'
+                      }`}></div>
+                    <span className="text-sm font-medium text-gray-700">{result.card.rarity}</span>
+                  </div>
+                </div>
+                {result.card.description && (
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                    {result.card.description}
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex justify-center gap-3">
+          <Button onClick={() => setResult(null)} className="flex items-center gap-2">
+            <RotateCcw className="w-4 h-4" />
+            Create Another Card
+          </Button>
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={() => onCardSelect?.(result.card.watermark_id)}
+          >
+            <Eye className="w-4 h-4" />
+            View Card Stats
+          </Button>
+          <Button 
+            variant="secondary"
+            className="flex items-center gap-2"
+            onClick={() => onViewGallery?.()}
+          >
+            View Gallery
+          </Button>
+        </div>
       </div>
     );
   }
@@ -174,7 +183,6 @@ export function CreateCard({ onCardCreated }: CreateCardProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Palette className="w-5 h-5" />
               Create New Trading Card
             </CardTitle>
             <CardDescription>
@@ -182,9 +190,9 @@ export function CreateCard({ onCardCreated }: CreateCardProps) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-4">
               <div>
-                <Label htmlFor="card_name">Card Name *</Label>
+                <Label htmlFor="card_name" className="block mb-2">Card Name *</Label>
                 <Input
                   id="card_name"
                   value={formData.card_name}
@@ -195,7 +203,7 @@ export function CreateCard({ onCardCreated }: CreateCardProps) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="series">Series</Label>
+                  <Label htmlFor="series" className="block mb-2">Series</Label>
                   <Input
                     id="series"
                     value={formData.series}
@@ -204,7 +212,7 @@ export function CreateCard({ onCardCreated }: CreateCardProps) {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="rarity">Rarity</Label>
+                  <Label htmlFor="rarity" className="block mb-2">Rarity</Label>
                   <select
                     id="rarity"
                     value={formData.rarity}
@@ -222,7 +230,7 @@ export function CreateCard({ onCardCreated }: CreateCardProps) {
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description" className="block mb-2">Description</Label>
                 <textarea
                   id="description"
                   value={formData.description}
@@ -234,7 +242,7 @@ export function CreateCard({ onCardCreated }: CreateCardProps) {
               </div>
 
               <div>
-                <Label htmlFor="creator_address">Creator Address</Label>
+                <Label htmlFor="creator_address" className="block mb-2">Creator Address</Label>
                 <Input
                   id="creator_address"
                   value={formData.creator_address}
@@ -244,33 +252,25 @@ export function CreateCard({ onCardCreated }: CreateCardProps) {
               </div>
 
               <div>
-                <Label htmlFor="image">Card Image *</Label>
-                <Input
-                  id="image"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  required
-                />
+                <Label className="block mb-2">Card Image *</Label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg">
+                  <FileUpload onChange={handleFileChange} />
+                </div>
                 <p className="text-sm text-muted-foreground mt-1">
                   Upload the original card image. A watermarked version will be generated automatically.
                 </p>
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Creating Card...
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    Create Card & Generate Watermark
-                  </div>
-                )}
-              </Button>
-            </form>
+              <StatefulButton
+                onClick={handleSubmit}
+                disabled={!selectedFile || !formData.card_name}
+                loadingText="Creating Card..."
+                successText="Card Created!"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Create Card & Generate Watermark
+              </StatefulButton>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -305,20 +305,7 @@ export function CreateCard({ onCardCreated }: CreateCardProps) {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>How it Works</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ol className="text-sm space-y-1">
-              <li>1. Upload your card image and fill in details</li>
-              <li>2. System generates a unique 5-character watermark ID</li>
-              <li>3. Watermark is embedded invisibly into the image</li>
-              <li>4. Card is added to the database</li>
-              <li>5. Users can scan the physical card to claim the NFT</li>
-            </ol>
-          </CardContent>
-        </Card>
+        {/* Removed How it Works section per request */}
       </div>
     </div>
   );

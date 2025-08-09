@@ -13,6 +13,7 @@ export function CardDetail({ watermarkId, onBack }: CardDetailProps) {
   const [card, setCard] = useState<CardType | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  // Hide original image controls for now per request
 
   useEffect(() => {
     const loadCard = async () => {
@@ -72,81 +73,11 @@ export function CardDetail({ watermarkId, onBack }: CardDetailProps) {
           <ArrowLeft className="w-4 h-4" />
           Back to Gallery
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold">{card.card_name}</h1>
-          <p className="text-muted-foreground">
-            Watermark ID: <span className="font-mono font-semibold">{card.watermark_id}</span>
-          </p>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Images */}
         <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Eye className="w-5 h-5" />
-                Original Image
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <img
-                src={card.image_url}
-                alt={card.card_name}
-                className="w-full rounded-lg border hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => {
-                  const newWindow = window.open('', '_blank');
-                  if (newWindow) {
-                    newWindow.document.write(`
-                      <html>
-                        <head>
-                          <title>${card.card_name} - Original</title>
-                          <style>
-                            body { margin: 0; padding: 20px; background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-                            img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
-                          </style>
-                        </head>
-                        <body>
-                          <img src="${card.image_url}" alt="${card.card_name} - Original" />
-                        </body>
-                      </html>
-                    `);
-                    newWindow.document.close();
-                  }
-                }}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full mt-3 flex items-center gap-2"
-                onClick={() => {
-                  const newWindow = window.open('', '_blank');
-                  if (newWindow) {
-                    newWindow.document.write(`
-                      <html>
-                        <head>
-                          <title>${card.card_name} - Original</title>
-                          <style>
-                            body { margin: 0; padding: 20px; background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-                            img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
-                          </style>
-                        </head>
-                        <body>
-                          <img src="${card.image_url}" alt="${card.card_name} - Original" />
-                        </body>
-                      </html>
-                    `);
-                    newWindow.document.close();
-                  }
-                }}
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open Full Size
-              </Button>
-            </CardContent>
-          </Card>
-
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -219,6 +150,14 @@ export function CardDetail({ watermarkId, onBack }: CardDetailProps) {
               <CardTitle>Card Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Title</label>
+                <p className="text-2xl font-bold">{card.card_name}</p>
+                <p className="text-muted-foreground">
+                  Watermark ID: <span className="font-mono font-semibold">{card.watermark_id}</span>
+                </p>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Series</label>

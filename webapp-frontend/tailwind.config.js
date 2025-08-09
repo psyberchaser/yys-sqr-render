@@ -14,6 +14,10 @@ module.exports = {
       },
     },
     extend: {
+      fontFamily: {
+        'barlow': ['Barlow', 'sans-serif'],
+        'sans': ['Barlow', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

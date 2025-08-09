@@ -3,7 +3,11 @@ services:
     name: yys-sqr-webapp
     env: python
     plan: starter
-    buildCommand: pip install -r requirements-webapp.txt
+    buildCommand: |
+      pip install -r requirements-webapp.txt
+      cd webapp-frontend
+      npm ci || npm install
+      npm run build
     startCommand: python webapp_server.py
     envVars:
       - key: PYTHON_VERSION
